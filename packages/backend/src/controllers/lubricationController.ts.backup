@@ -1,0 +1,290 @@
+import { Response } from 'express';
+import { query } from '../database/connection';
+import { AppError } from '../middleware/errorHandler';
+import { AuthRequest } from '../middleware/auth';
+import { addDays, daysBetween, formatDate } from '../utils/dateHelper';
+
+export const getLubricationPoints = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const result = await query(`
+      SELECT
+        lp.*,
+        lr.performed_at as last_performed,
+        lr.next_due_date,
+        CASE
+          WHEN lr.next_due_date IS NULL THEN 0
+          ELSE EXTRACT(DAY FROM (lr.next_due_date - CURRENT_DATE))
+        END as days_until_due
+      FROM lubrication_points lp
+      LEFT JOIN LATERAL (
+        SELECT performed_at, next_due_date
+        FROM lubrication_records
+        WHERE point_id = lp.id
+        ORDER BY performed_at DESC
+        LIMIT 1
+      ) lr ON true
+      WHERE lp.is_active = true
+      ORDER BY days_until_due ASC NULLS FIRST, lp.machine_name
+    `);
+
+    const pointsWithStatus = result.rows.map(point => {
+      let status = 'ok';
+      const daysUntilDue = point.days_until_due;
+
+      if (daysUntilDue === null || daysUntilDue === undefined) {
+        status = 'overdue';
+      } else if (daysUntilDue < 0) {
+        status = 'overdue';
+      } else if (daysUntilDue <= 3) {
+        status = 'due_soon';
+      } else if (daysUntilDue <= 7) {
+        status = 'upcoming';
+      }
+
+      return {
+        ...point,
+        status,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: pointsWithStatus,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getLubricationPointById = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { id } = req.params;
+
+    const result = await query(
+      'SELECT * FROM lubrication_points WHERE id = $1',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      throw new AppError('Lubrication point not found', 404);
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createLubricationPoint = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { machine_name, location, cycle_days, description } = req.body;
+
+    const result = await query(
+      `INSERT INTO lubrication_points (machine_name, location, cycle_days, description, created_by)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [machine_name, location, cycle_days, description || null, req.user?.id]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error: any) {
+    if (error.code === '23505') {
+      next(new AppError('Lubrication point already exists for this machine and location', 409));
+    } else {
+      next(error);
+    }
+  }
+};
+
+export const updateLubricationPoint = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { id } = req.params;
+    const { machine_name, location, cycle_days, description, is_active } = req.body;
+
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramCount = 1;
+
+    if (machine_name !== undefined) {
+      updates.push(`machine_name = $${paramCount++}`);
+      values.push(machine_name);
+    }
+
+    if (location !== undefined) {
+      updates.push(`location = $${paramCount++}`);
+      values.push(location);
+    }
+
+    if (cycle_days !== undefined) {
+      updates.push(`cycle_days = $${paramCount++}`);
+      values.push(cycle_days);
+    }
+
+    if (description !== undefined) {
+      updates.push(`description = $${paramCount++}`);
+      values.push(description);
+    }
+
+    if (is_active !== undefined) {
+      updates.push(`is_active = $${paramCount++}`);
+      values.push(is_active);
+    }
+
+    if (updates.length === 0) {
+      throw new AppError('No fields to update', 400);
+    }
+
+    updates.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(id);
+
+    const result = await query(
+      `UPDATE lubrication_points SET ${updates.join(', ')}
+       WHERE id = $${paramCount}
+       RETURNING *`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      throw new AppError('Lubrication point not found', 404);
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteLubricationPoint = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { id } = req.params;
+
+    const result = await query(
+      'DELETE FROM lubrication_points WHERE id = $1 RETURNING id',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      throw new AppError('Lubrication point not found', 404);
+    }
+
+    res.json({
+      success: true,
+      message: 'Lubrication point deleted successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const performLubrication = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { id } = req.params;
+    const { performed_at, notes } = req.body;
+
+    // Get lubrication point
+    const pointResult = await query(
+      'SELECT * FROM lubrication_points WHERE id = $1',
+      [id]
+    );
+
+    if (pointResult.rows.length === 0) {
+      throw new AppError('Lubrication point not found', 404);
+    }
+
+    const point = pointResult.rows[0];
+
+    // Calculate next due date
+    const performedDate = performed_at ? new Date(performed_at) : new Date();
+    const nextDueDate = addDays(performedDate, point.cycle_days);
+
+    // Insert lubrication record
+    const result = await query(
+      `INSERT INTO lubrication_records (point_id, performed_at, performed_by, next_due_date, notes)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [id, performedDate, req.user?.id, nextDueDate, notes || null]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getLubricationRecords = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { id } = req.params;
+
+    const result = await query(
+      `SELECT lr.*, u.username as performed_by_username
+       FROM lubrication_records lr
+       LEFT JOIN users u ON lr.performed_by = u.id
+       WHERE lr.point_id = $1
+       ORDER BY lr.performed_at DESC
+       LIMIT 50`,
+      [id]
+    );
+
+    res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAlerts = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const result = await query(`
+      SELECT
+        lp.id,
+        lp.machine_name,
+        lp.location,
+        lp.cycle_days,
+        lr.performed_at as last_performed,
+        lr.next_due_date as due_date,
+        CASE
+          WHEN lr.next_due_date IS NULL THEN -999
+          ELSE EXTRACT(DAY FROM (lr.next_due_date - CURRENT_DATE))
+        END as days_until_due,
+        CASE
+          WHEN lr.next_due_date IS NULL THEN 'overdue'
+          WHEN lr.next_due_date < CURRENT_DATE THEN 'overdue'
+          WHEN lr.next_due_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'due_soon'
+          WHEN lr.next_due_date <= CURRENT_DATE + INTERVAL '7 days' THEN 'upcoming'
+          ELSE 'ok'
+        END as status
+      FROM lubrication_points lp
+      LEFT JOIN LATERAL (
+        SELECT performed_at, next_due_date
+        FROM lubrication_records
+        WHERE point_id = lp.id
+        ORDER BY performed_at DESC
+        LIMIT 1
+      ) lr ON true
+      WHERE lp.is_active = true
+        AND (lr.next_due_date IS NULL OR lr.next_due_date <= CURRENT_DATE + INTERVAL '7 days')
+      ORDER BY days_until_due ASC
+    `);
+
+    res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

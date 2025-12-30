@@ -1,0 +1,21 @@
+{
+  "name": "セッツカートン製造用アプリ",
+  "short_name": "セッツカートン",
+  "description": "給油管理と部品在庫管理を統合した設備メンテナンス管理システム",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "lang": "ja",
+  "dir": "ltr"
+}
