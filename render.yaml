@@ -1,11 +1,10 @@
-services:
-  # PostgreSQL Database
-  - type: pserv
-    name: sets-carton-db
+databases:
+  - name: sets-carton-db
     plan: free
     databaseName: sets_carton_maintenance
-    databaseUser: sets_carton_user
+    user: sets_carton_user
 
+services:
   # Backend API
   - type: web
     name: sets-carton-backend
@@ -48,7 +47,4 @@ services:
     staticPublishPath: ./packages/frontend/dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: sets-carton-backend
-          property: host
+        sync: false
