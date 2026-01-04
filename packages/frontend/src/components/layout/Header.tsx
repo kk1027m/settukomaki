@@ -1,6 +1,6 @@
 import { Bell, LogOut, Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -28,11 +28,13 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <Menu size={24} />
           </button>
 
-          <img
-            src="/logo.png"
-            alt="セッツカートンロゴ"
-            className="h-12 md:h-20 w-auto object-contain"
-          />
+          <Link to="/dashboard" className="cursor-pointer hover:opacity-80 transition-opacity">
+            <img
+              src="/logo.png"
+              alt="セッツカートンロゴ"
+              className="h-12 md:h-20 w-auto object-contain"
+            />
+          </Link>
           <div className="hidden sm:block border-l border-gray-300 pl-2 md:pl-4">
             <h1 className="text-xs md:text-sm font-medium text-gray-600 leading-tight">
               セッツカートン製造用アプリ
