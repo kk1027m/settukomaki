@@ -5,7 +5,7 @@ import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
 import { Input } from '../components/common/Input';
 import { ImageUpload, Attachment } from '../components/common/ImageUpload';
-import { api } from '../services/api';
+import { api, API_URL } from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -71,7 +71,7 @@ export default function LubricationPage() {
               // Fetch thumbnail as blob
               try {
                 console.log('Fetching thumbnail for point:', point.id, thumbnailUrl);
-                const blobResponse = await axios.get(`http://localhost:3001${thumbnailUrl}`, {
+                const blobResponse = await axios.get(`${API_URL}${thumbnailUrl}`, {
                   responseType: 'blob',
                   timeout: 10000
                 });
@@ -190,7 +190,7 @@ export default function LubricationPage() {
       for (const image of viewImages) {
         if (image.mime_type?.startsWith('image/') && !detailImageUrls[image.id]) {
           try {
-            const response = await axios.get(`http://localhost:3001${image.url}`, {
+            const response = await axios.get(`${API_URL}${image.url}`, {
               responseType: 'blob',
               timeout: 10000,
             });

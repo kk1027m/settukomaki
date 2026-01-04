@@ -5,7 +5,7 @@ import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
 import { Input } from '../components/common/Input';
 import { FileUpload, Attachment } from '../components/common/FileUpload';
-import { api } from '../services/api';
+import { api, API_URL } from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -195,7 +195,7 @@ export default function MaintenanceProceduresPage() {
       for (const attachment of attachments) {
         if (attachment.mime_type?.startsWith('image/') && !imageUrls[attachment.id]) {
           try {
-            const response = await axios.get(`http://localhost:3001${attachment.url}`, {
+            const response = await axios.get(`${API_URL}${attachment.url}`, {
               responseType: 'blob',
               timeout: 10000,
             });
@@ -743,7 +743,7 @@ export default function MaintenanceProceduresPage() {
                         </div>
                       ) : attachment.mime_type === 'application/pdf' ? (
                         <a
-                          href={`http://localhost:3001${attachment.url}`}
+                          href={`${API_URL}${attachment.url}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
