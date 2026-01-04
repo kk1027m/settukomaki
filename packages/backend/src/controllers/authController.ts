@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { query } from '../database/connection';
 import { authConfig } from '../config/auth';
 import { AppError } from '../middleware/errorHandler';
@@ -34,16 +34,18 @@ export const login = async (req: AuthRequest, res: Response, next: any) => {
     }
 
     // Generate tokens
+    const tokenOptions: SignOptions = { expiresIn: authConfig.jwtExpiresIn };
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       authConfig.jwtSecret,
-      { expiresIn: authConfig.jwtExpiresIn as string }
+      tokenOptions
     );
 
+    const refreshTokenOptions: SignOptions = { expiresIn: authConfig.refreshTokenExpiresIn };
     const refreshToken = jwt.sign(
       { id: user.id },
       authConfig.refreshTokenSecret,
-      { expiresIn: authConfig.refreshTokenExpiresIn as string }
+      refreshTokenOptions
     );
 
     // Remove password from response
@@ -147,10 +149,11 @@ export const refreshAccessToken = async (req: AuthRequest, res: Response, next: 
     const user = result.rows[0];
 
     // Generate new access token
+    const tokenOptions: SignOptions = { expiresIn: authConfig.jwtExpiresIn };
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       authConfig.jwtSecret,
-      { expiresIn: authConfig.jwtExpiresIn as string }
+      tokenOptions
     );
 
     res.json({
