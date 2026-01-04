@@ -37,13 +37,13 @@ export const login = async (req: AuthRequest, res: Response, next: any) => {
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       authConfig.jwtSecret,
-      { expiresIn: authConfig.jwtExpiresIn }
+      { expiresIn: authConfig.jwtExpiresIn as string }
     );
 
     const refreshToken = jwt.sign(
       { id: user.id },
       authConfig.refreshTokenSecret,
-      { expiresIn: authConfig.refreshTokenExpiresIn }
+      { expiresIn: authConfig.refreshTokenExpiresIn as string }
     );
 
     // Remove password from response
@@ -150,7 +150,7 @@ export const refreshAccessToken = async (req: AuthRequest, res: Response, next: 
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       authConfig.jwtSecret,
-      { expiresIn: authConfig.jwtExpiresIn }
+      { expiresIn: authConfig.jwtExpiresIn as string }
     );
 
     res.json({
