@@ -182,19 +182,6 @@ export default function PartsPage() {
     });
   };
 
-  const _quickAdjust = async (partId: number, amount: number) => {
-    try {
-      await api.post(`/parts/${partId}/adjust`, {
-        action_type: amount > 0 ? '入庫' : '出庫',
-        quantity: Math.abs(amount),
-      });
-      toast.success('在庫を調整しました');
-      loadParts();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || '在庫調整に失敗しました');
-    }
-  };
-
   if (loading) {
     return <div className="text-center py-8">読み込み中...</div>;
   }

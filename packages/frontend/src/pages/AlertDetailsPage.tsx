@@ -182,7 +182,7 @@ export default function AlertDetailsPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={() => navigate('/dashboard')}
             className="mr-4"
           >

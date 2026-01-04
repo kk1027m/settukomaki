@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Check, ChevronDown, ChevronRight, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
@@ -322,8 +322,8 @@ export default function LubricationPage() {
           onChange={(e) => setSelectedUnit(e.target.value)}
         >
           <option value="all">すべて表示</option>
-          {units.filter(u => u !== 'all').map(unit => (
-            <option key={unit} value={unit}>{unit}</option>
+          {units.filter(u => u !== 'all' && u !== null).map(unit => (
+            <option key={unit} value={unit || ''}>{unit}</option>
           ))}
         </select>
       </div>

@@ -21,7 +21,7 @@ interface Inquiry {
 }
 
 export default function InquiriesPage() {
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
