@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sets-carton-v2';
+const CACHE_NAME = 'sets-carton-v3';
 const urlsToCache = [
   '/',
   '/index.html',
