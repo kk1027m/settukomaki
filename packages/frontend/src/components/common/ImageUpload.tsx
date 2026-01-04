@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { Button } from './Button';
-import { api } from '../../services/api';
+import { api, API_URL } from '../../services/api';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { compressImage, isImageFile, getFileSizeMB } from '../../utils/imageCompression';
@@ -39,7 +39,7 @@ export function ImageUpload({ entityType, entityId, images, onImagesChange, disa
         if (!imageUrls[image.id]) {
           try {
             console.log('Fetching image:', image.id, image.url);
-            const response = await axios.get(`http://localhost:3001${image.url}`, {
+            const response = await axios.get(`${API_URL}${image.url}`, {
               responseType: 'blob',
               timeout: 10000
             });

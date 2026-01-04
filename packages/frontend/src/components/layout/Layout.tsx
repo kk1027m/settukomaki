@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { RefreshCw } from 'lucide-react';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -10,6 +10,8 @@ export default function Layout() {
   const [pullDistance, setPullDistance] = useState(0);
   const startY = useRef(0);
   const mainRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -45,8 +47,12 @@ export default function Layout() {
 
     const handleTouchEnd = () => {
       if (isPulling && pullDistance > 80) {
-        // リフレッシュを実行
-        window.location.reload();
+        // Refresh by navigating to current path
+        navigate(location.pathname, { replace: true });
+        // Force a small delay to ensure refresh
+        setTimeout(() => {
+          navigate(0); // This refreshes the route
+        }, 10);
       }
 
       // 状態をリセット

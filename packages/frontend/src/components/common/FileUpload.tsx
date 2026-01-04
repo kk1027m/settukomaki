@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Upload, X, Image as ImageIcon, FileText } from 'lucide-react';
 import { Button } from './Button';
-import { api } from '../../services/api';
+import { api, API_URL } from '../../services/api';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { compressImage, isImageFile, getFileSizeMB } from '../../utils/imageCompression';
@@ -42,7 +42,7 @@ export function FileUpload({ entityType, entityId, files, onFilesChange, disable
         if (!fileUrls[file.id] && file.mime_type?.startsWith('image/')) {
           try {
             console.log('Fetching file:', file.id, file.url);
-            const response = await axios.get(`http://localhost:3001${file.url}`, {
+            const response = await axios.get(`${API_URL}${file.url}`, {
               responseType: 'blob',
               timeout: 10000
             });
@@ -297,7 +297,7 @@ export function FileUpload({ entityType, entityId, files, onFilesChange, disable
                   )
                 ) : (
                   <a
-                    href={`http://localhost:3001${file.url}`}
+                    href={`${API_URL}${file.url}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full h-full flex items-center justify-center hover:bg-gray-200 transition-colors"
