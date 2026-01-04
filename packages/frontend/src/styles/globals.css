@@ -53,3 +53,52 @@
     @apply bg-green-100 text-green-800;
   }
 }
+
+/* プルトゥリフレッシュのスタイル */
+html {
+  overscroll-behavior-y: contain;
+}
+
+body {
+  overscroll-behavior-y: contain;
+}
+
+.pull-to-refresh {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  width: 40px;
+  height: 40px;
+  background-color: rgba(59, 130, 246, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+  z-index: 9999;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.pull-to-refresh.visible {
+  transform: translateX(-50%) translateY(16px);
+}
+
+.pull-to-refresh svg {
+  width: 24px;
+  height: 24px;
+  color: white;
+}
+
+.pull-to-refresh.spinning svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sets-carton-v1';
+const CACHE_NAME = 'sets-carton-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -51,6 +51,25 @@ self.addEventListener('fetch', (event) => {
             status: 503,
             headers: { 'Content-Type': 'application/json' }
           });
+        })
+    );
+    return;
+  }
+
+  // SPA対応：ナビゲーションリクエスト（HTMLページ）の場合は常にindex.htmlを返す
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // 404などのエラーの場合もindex.htmlを返す（SPAのルーティングに任せる）
+          if (!response || response.status === 404) {
+            return caches.match('/index.html');
+          }
+          return response;
+        })
+        .catch(() => {
+          // ネットワークエラー時はキャッシュからindex.htmlを返す
+          return caches.match('/index.html');
         })
     );
     return;
