@@ -69,26 +69,28 @@ app.use((req, res) => {
 // Error handler
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  logger.info(`Server is running on port ${PORT}`);
-  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+// Start server (only in non-serverless environment)
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, () => {
+    logger.info(`Server is running on port ${PORT}`);
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
 
-  // Initialize scheduler
-  if (process.env.NODE_ENV !== 'test') {
-    initScheduler();
-  }
-});
+    // Initialize scheduler
+    if (process.env.NODE_ENV !== 'test') {
+      initScheduler();
+    }
+  });
 
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  logger.error('Uncaught Exception:', error);
-  process.exit(1);
-});
+  // Handle uncaught exceptions
+  process.on('uncaughtException', (error) => {
+    logger.error('Uncaught Exception:', error);
+    process.exit(1);
+  });
 
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    process.exit(1);
+  });
+}
 
 export default app;
