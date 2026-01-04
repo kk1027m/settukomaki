@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Mail, MessageSquare, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Plus, Mail, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';

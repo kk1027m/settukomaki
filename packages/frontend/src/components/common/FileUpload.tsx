@@ -137,7 +137,7 @@ export function FileUpload({ entityType, entityId, files, onFilesChange, disable
   };
 
   // Upload all pending files (called after entity creation)
-  const uploadPendingFiles = async (newEntityId: number) => {
+  const _uploadPendingFiles = async (newEntityId: number) => {
     if (pendingFiles.length === 0) return;
 
     setUploading(true);
@@ -155,7 +155,7 @@ export function FileUpload({ entityType, entityId, files, onFilesChange, disable
             },
           }
         );
-        onFilesChange(prev => [...prev, response.data.data]);
+        onFilesChange((prev: Attachment[]) => [...prev, response.data.data]);
       }
       setPendingFiles([]);
       toast.success('すべてのファイルをアップロードしました');

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/common/Card';
-import { AlertTriangle, Droplet, Package, Bell, MessageSquare, Mail } from 'lucide-react';
+import { AlertTriangle, Droplet, Package, MessageSquare, Mail } from 'lucide-react';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';

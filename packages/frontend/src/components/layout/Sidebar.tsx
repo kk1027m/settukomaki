@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Droplet, Wrench, Package, MessageSquare, Bell, Users, Settings, FileText, Mail, X } from 'lucide-react';
+import { LayoutDashboard, Droplet, Wrench, Package, Users, Settings, FileText, Mail, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface SidebarProps {
