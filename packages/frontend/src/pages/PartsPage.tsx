@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, TrendingUp, TrendingDown, FileText, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Edit, Trash2, TrendingUp, FileText, ChevronDown, ChevronRight } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
@@ -182,7 +182,7 @@ export default function PartsPage() {
     });
   };
 
-  const quickAdjust = async (partId: number, amount: number) => {
+  const _quickAdjust = async (partId: number, amount: number) => {
     try {
       await api.post(`/parts/${partId}/adjust`, {
         action_type: amount > 0 ? '入庫' : '出庫',
@@ -256,8 +256,8 @@ export default function PartsPage() {
             onChange={(e) => setSelectedUnit(e.target.value)}
           >
             <option value="all">すべて表示</option>
-            {locations.filter(l => l !== 'all').map(location => (
-              <option key={location} value={location}>{location}</option>
+            {locations.filter(l => l !== 'all' && l !== null).map(location => (
+              <option key={location} value={location || ''}>{location}</option>
             ))}
           </select>
         </div>
