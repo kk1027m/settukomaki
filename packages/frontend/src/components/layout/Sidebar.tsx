@@ -1,8 +1,13 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Droplet, Wrench, Package, MessageSquare, Bell, Users, Settings, FileText, Mail } from 'lucide-react';
+import { LayoutDashboard, Droplet, Wrench, Package, MessageSquare, Bell, Users, Settings, FileText, Mail, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { isAdmin } = useAuth();
 
   const navItems = [
@@ -25,28 +30,56 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 overflow-y-auto">
-      <nav className="p-4 space-y-2">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-primary-50 text-primary-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`
-              }
-            >
-              <Icon size={20} />
-              <span>{item.label}</span>
-            </NavLink>
-          );
-        })}
-      </nav>
-    </aside>
+    <>
+      {/* オーバーレイ（モバイルのみ） */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      {/* サイドバー */}
+      <aside
+        className={`
+          fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 overflow-y-auto z-50 transition-transform duration-300
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0
+        `}
+      >
+        {/* 閉じるボタン（モバイルのみ） */}
+        <div className="md:hidden flex justify-end p-4">
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        <nav className="p-4 space-y-2">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={onClose}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive
+                      ? 'bg-primary-50 text-primary-700 font-medium'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`
+                }
+              >
+                <Icon size={20} />
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
+      </aside>
+    </>
   );
 }
