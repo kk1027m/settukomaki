@@ -136,35 +136,6 @@ export function FileUpload({ entityType, entityId, files, onFilesChange, disable
     }
   };
 
-  // Upload all pending files (called after entity creation)
-  const _uploadPendingFiles = async (newEntityId: number) => {
-    if (pendingFiles.length === 0) return;
-
-    setUploading(true);
-    try {
-      for (const file of pendingFiles) {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await api.post(
-          `/uploads/${entityType}/${newEntityId}`,
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
-        onFilesChange((prev: Attachment[]) => [...prev, response.data.data]);
-      }
-      setPendingFiles([]);
-      toast.success('すべてのファイルをアップロードしました');
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'ファイルのアップロードに失敗しました');
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleDelete = async (fileId: number) => {
     if (!confirm('このファイルを削除しますか？')) return;
