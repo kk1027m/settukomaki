@@ -326,8 +326,8 @@ export default function ReplacementPage() {
           onChange={(e) => setSelectedUnit(e.target.value)}
         >
           <option value="all">すべて表示</option>
-          {units.filter(u => u !== 'all').map(unit => (
-            <option key={unit} value={unit}>{unit}</option>
+          {units.filter(u => u !== 'all' && u !== null).map(unit => (
+            <option key={unit} value={unit || ''}>{unit}</option>
           ))}
         </select>
       </div>

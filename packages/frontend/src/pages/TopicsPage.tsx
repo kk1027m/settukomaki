@@ -176,14 +176,12 @@ export default function TopicsPage() {
                   <div className="flex gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="secondary"
-                      size="sm"
                       onClick={() => handleEdit(topic)}
                     >
                       <Edit size={16} />
                     </Button>
                     <Button
                       variant="danger"
-                      size="sm"
                       onClick={() => handleDelete(topic.id)}
                     >
                       <Trash2 size={16} />
