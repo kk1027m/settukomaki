@@ -4,6 +4,7 @@ import { Button } from './Button';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { compressImage, isImageFile, getFileSizeMB } from '../../utils/imageCompression';
 
 interface ImageUploadProps {
   entityType: 'lubrication_point' | 'replacement_schedule' | 'part' | 'maintenance_procedure' | 'topic';
@@ -25,6 +26,7 @@ export interface Attachment {
 
 export function ImageUpload({ entityType, entityId, images, onImagesChange, disabled }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [compressing, setCompressing] = useState(false);
   const [imageUrls, setImageUrls] = useState<Record<number, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,22 +79,56 @@ export function ImageUpload({ entityType, entityId, images, onImagesChange, disa
       return;
     }
 
-    setUploading(true);
-
     try {
-      const file = files[0];
+      let file = files[0];
 
       // Validate file type
-      if (!file.type.startsWith('image/')) {
+      if (!isImageFile(file)) {
         toast.error('画像ファイルのみアップロード可能です');
         return;
       }
 
-      // Validate file size (5MB)
-      if (file.size > 5 * 1024 * 1024) {
+      const originalSizeMB = getFileSizeMB(file);
+
+      // Compress if file size > 1MB
+      if (originalSizeMB > 1) {
+        setCompressing(true);
+        toast.loading(`画像を圧縮中... (元サイズ: ${originalSizeMB.toFixed(2)}MB)`);
+
+        try {
+          // First compression attempt with quality 0.8
+          let compressedFile = await compressImage(file);
+          let compressedSizeMB = getFileSizeMB(compressedFile);
+
+          // If still > 5MB, compress again with lower quality
+          if (compressedSizeMB > 5) {
+            compressedFile = await compressImage(file, 1920, 1920, 0.6);
+            compressedSizeMB = getFileSizeMB(compressedFile);
+          }
+
+          toast.dismiss();
+          toast.success(
+            `画像を圧縮しました (${originalSizeMB.toFixed(2)}MB → ${compressedSizeMB.toFixed(2)}MB)`
+          );
+
+          file = compressedFile;
+        } catch (error) {
+          toast.dismiss();
+          toast.error('画像の圧縮に失敗しました');
+          console.error('Compression error:', error);
+          return;
+        } finally {
+          setCompressing(false);
+        }
+      }
+
+      // Final size check
+      if (getFileSizeMB(file) > 5) {
         toast.error('ファイルサイズは5MB以下にしてください');
         return;
       }
+
+      setUploading(true);
 
       const formData = new FormData();
       formData.append('file', file);
@@ -145,21 +181,26 @@ export function ImageUpload({ entityType, entityId, images, onImagesChange, disa
           accept="image/*"
           onChange={handleFileSelect}
           className="hidden"
-          disabled={disabled || uploading || !entityId}
+          disabled={disabled || uploading || compressing || !entityId}
         />
         <Button
           type="button"
           variant="secondary"
           onClick={() => fileInputRef.current?.click()}
-          disabled={disabled || uploading || !entityId}
+          disabled={disabled || uploading || compressing || !entityId}
           className="w-full sm:w-auto"
         >
           <Upload size={16} className="mr-2" />
-          {uploading ? 'アップロード中...' : '画像を追加'}
+          {compressing ? '圧縮中...' : uploading ? 'アップロード中...' : '画像を追加'}
         </Button>
         {!entityId && (
           <p className="text-xs text-gray-500 mt-1">
             ※ 画像は項目の保存後にアップロード可能です
+          </p>
+        )}
+        {entityId && (
+          <p className="text-xs text-gray-500 mt-1">
+            ※ 大きな画像は自動で圧縮されます
           </p>
         )}
       </div>
