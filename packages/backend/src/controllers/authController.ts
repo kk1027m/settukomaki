@@ -34,14 +34,14 @@ export const login = async (req: AuthRequest, res: Response, next: any) => {
     }
 
     // Generate tokens
-    const tokenOptions: SignOptions = { expiresIn: authConfig.jwtExpiresIn };
+    const tokenOptions: SignOptions = { expiresIn: authConfig.jwtExpiresIn as any };
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       authConfig.jwtSecret,
       tokenOptions
     );
 
-    const refreshTokenOptions: SignOptions = { expiresIn: authConfig.refreshTokenExpiresIn };
+    const refreshTokenOptions: SignOptions = { expiresIn: authConfig.refreshTokenExpiresIn as any };
     const refreshToken = jwt.sign(
       { id: user.id },
       authConfig.refreshTokenSecret,
@@ -149,7 +149,7 @@ export const refreshAccessToken = async (req: AuthRequest, res: Response, next: 
     const user = result.rows[0];
 
     // Generate new access token
-    const tokenOptions: SignOptions = { expiresIn: authConfig.jwtExpiresIn };
+    const tokenOptions: SignOptions = { expiresIn: authConfig.jwtExpiresIn as any };
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       authConfig.jwtSecret,
