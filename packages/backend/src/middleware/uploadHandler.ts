@@ -4,9 +4,13 @@ import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { storageConfig } from '../config/storage';
 
-// Ensure upload directory exists
-if (!fs.existsSync(storageConfig.uploadDir)) {
-  fs.mkdirSync(storageConfig.uploadDir, { recursive: true });
+// Ensure upload directory exists (safe for serverless)
+try {
+  if (!fs.existsSync(storageConfig.uploadDir)) {
+    fs.mkdirSync(storageConfig.uploadDir, { recursive: true });
+  }
+} catch (error) {
+  console.warn('Failed to create upload directory:', error);
 }
 
 const storage = multer.diskStorage({
