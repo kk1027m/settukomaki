@@ -168,7 +168,28 @@ export function FileUpload({ entityType, entityId, files, onFilesChange, disable
       onFilesChange([...files, response.data.data]);
       toast.success('ファイルをアップロードしました');
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'ファイルのアップロードに失敗しました');
+      console.error('Upload error:', error);
+
+      // Detailed error message for debugging
+      let errorMessage = 'ファイルのアップロードに失敗しました';
+
+      if (error.response) {
+        // Server responded with an error
+        errorMessage = error.response.data?.error || `サーバーエラー (${error.response.status})`;
+        console.error('Server error response:', error.response.status, error.response.data);
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = 'サーバーに接続できませんでした';
+        console.error('No response from server:', error.request);
+      } else if (error.code === 'ECONNABORTED') {
+        // Timeout
+        errorMessage = 'アップロードがタイムアウトしました';
+      } else {
+        // Something else happened
+        errorMessage = error.message || 'ファイルのアップロードに失敗しました';
+      }
+
+      toast.error(errorMessage);
     } finally {
       setUploading(false);
     }
