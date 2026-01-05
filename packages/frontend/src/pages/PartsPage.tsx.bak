@@ -37,7 +37,6 @@ export default function PartsPage() {
   const [selectedUnit, setSelectedUnit] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
-  const [expandedPartNames, setExpandedPartNames] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     part_number: '',
     part_name: '',
@@ -183,18 +182,6 @@ export default function PartsPage() {
     });
   };
 
-  const togglePartName = (key: string) => {
-    setExpandedPartNames(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(key)) {
-        newSet.delete(key);
-      } else {
-        newSet.add(key);
-      }
-      return newSet;
-    });
-  };
-
   if (loading) {
     return <div className="text-center py-8">読み込み中...</div>;
   }
@@ -212,14 +199,12 @@ export default function PartsPage() {
   });
 
   // Group parts by location
-  const partsByLocationAndName = filteredParts.reduce((acc, part) => {
+  const partsByLocation = filteredParts.reduce((acc, part) => {
     const location = part.location || '未分類';
-    const partName = part.part_name || '未分類';
-    if (!acc[location]) acc[location] = {};
-    if (!acc[location][partName]) acc[location][partName] = [];
-    acc[location][partName].push(part);
+    if (!acc[location]) acc[location] = [];
+    acc[location].push(part);
     return acc;
-  }, {} as Record<string, Record<string, Part[]>>);
+  }, {} as Record<string, Part[]>);
 
   return (
     <div>
@@ -265,133 +250,105 @@ export default function PartsPage() {
         </div>
       </div>
 
-      {/* Display grouped by location, then by part_name */}
-      {Object.entries(partsByLocationAndName).map(([locationName, partsByName]) => {
-        const locationPartCount = Object.values(partsByName).flat().length;
-        return (
-          <div key={locationName} className="mb-8">
-            <div
-              className="flex items-center gap-2 text-2xl font-semibold mb-4 text-gray-700 border-b-2 border-gray-300 pb-2 cursor-pointer hover:text-blue-600 transition-colors"
-              onClick={() => toggleLocation(locationName)}
-            >
-              {expandedLocations.has(locationName) ? (
-                <ChevronDown size={28} />
-              ) : (
-                <ChevronRight size={28} />
+      {/* Display grouped by location */}
+      {Object.entries(partsByLocation).map(([locationName, locationParts]) => (
+        <div key={locationName} className="mb-8">
+          <div
+            className="flex items-center gap-2 text-2xl font-semibold mb-4 text-gray-700 border-b-2 border-gray-300 pb-2 cursor-pointer hover:text-blue-600 transition-colors"
+            onClick={() => toggleLocation(locationName)}
+          >
+            {expandedLocations.has(locationName) ? (
+              <ChevronDown size={28} />
+            ) : (
+              <ChevronRight size={28} />
+            )}
+            <h2>{locationName}</h2>
+            <span className="text-sm text-gray-500 ml-2">({locationParts.length}件)</span>
+          </div>
+          {expandedLocations.has(locationName) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {locationParts.map((part) => (
+          <Card
+            key={part.id}
+            onClick={() => handleView(part)}
+            className={`cursor-pointer hover:shadow-lg transition-shadow ${part.needs_order ? 'border-2 border-orange-300' : ''}`}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                {part.unit_name && (
+                  <p className="text-xs text-blue-600 font-medium">{part.unit_name}</p>
+                )}
+                <h3 className="font-bold text-lg">{part.part_name}</h3>
+                {part.part_number && (
+                  <p className="text-sm text-gray-600">{part.part_number}</p>
+                )}
+                {part.shelf_box_name && (
+                  <p className="text-xs text-gray-500 mt-1">📦 {part.shelf_box_name}</p>
+                )}
+              </div>
+              {part.needs_order && (
+                <span className="badge bg-orange-100 text-orange-800">在庫不足</span>
               )}
-              <h2>{locationName}</h2>
-              <span className="text-sm text-gray-500 ml-2">({locationPartCount}件)</span>
             </div>
-            {expandedLocations.has(locationName) && (
-              <div className="space-y-6">
-                {Object.entries(partsByName).map(([partName, partsInGroup]) => {
-                  const partKey = locationName + '-' + partName;
-                  const isExpanded = expandedPartNames.has(partKey);
-                  return (
-                  <div key={partName} className="ml-4">
-                    <div 
-                      className="flex items-center gap-2 text-lg font-medium mb-3 text-gray-600 border-l-4 border-blue-400 pl-3 cursor-pointer hover:text-blue-600 transition-colors"
-                      onClick={() => togglePartName(partKey)}
-                    >
-                      {isExpanded ? (
-                        <ChevronDown size={20} />
-                      ) : (
-                        <ChevronRight size={20} />
-                      )}
-                      <span>{partName}</span>
-                      <span className="text-sm text-gray-400">({partsInGroup.length}件)</span>
-                    </div>
-                    {isExpanded && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {partsInGroup.map((part) => (
-                        <Card
-                          key={part.id}
-                          onClick={() => handleView(part)}
-                          className={`cursor-pointer hover:shadow-lg transition-shadow ${part.needs_order ? 'border-2 border-orange-300' : ''}`}
-                        >
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              {part.unit_name && (
-                                <p className="text-xs text-blue-600 font-medium">{part.unit_name}</p>
-                              )}
-                              <h3 className="font-bold text-lg">{part.part_name}</h3>
-                              {part.part_number && (
-                                <p className="text-sm text-gray-600">{part.part_number}</p>
-                              )}
-                              {part.shelf_box_name && (
-                                <p className="text-xs text-gray-500 mt-1">📦 {part.shelf_box_name}</p>
-                              )}
-                            </div>
-                            {part.needs_order && (
-                              <span className="badge bg-orange-100 text-orange-800">在庫不足</span>
-                            )}
-                          </div>
 
-                          <div className="bg-gray-50 rounded p-3 mb-4">
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-gray-600">現在庫:</span>
-                              <span className="text-2xl font-bold">
-                                {part.current_stock} {part.unit}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-600">発注点:</span>
-                              <span className="text-sm">{part.min_stock} {part.unit}</span>
-                            </div>
-                          </div>
+            <div className="bg-gray-50 rounded p-3 mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-600">現在庫:</span>
+                <span className="text-2xl font-bold">
+                  {part.current_stock} {part.unit}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">発注点:</span>
+                <span className="text-sm">{part.min_stock} {part.unit}</span>
+              </div>
+            </div>
 
-                          {isAdmin && (
-                            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                              <Button
-                                variant="primary"
-                                className="flex-1 text-sm"
-                                onClick={() => {
-                                  setSelectedPart(part);
-                                  setIsAdjustModalOpen(true);
-                                }}
-                              >
-                                <TrendingUp size={16} className="mr-1" />
-                                在庫調整
-                              </Button>
-                              <Button
-                                variant="secondary"
-                                className="text-sm"
-                                onClick={() => {
-                                  setSelectedPart(part);
-                                  setIsOrderModalOpen(true);
-                                }}
-                              >
-                                <FileText size={16} />
-                              </Button>
-                              <Button
-                                variant="secondary"
-                                className="text-sm"
-                                onClick={() => handleEdit(part)}
-                              >
-                                <Edit size={16} />
-                              </Button>
-                              <Button
-                                variant="danger"
-                                className="text-sm"
-                                onClick={() => handleDelete(part.id)}
-                              >
-                                <Trash2 size={16} />
-                              </Button>
-                            </div>
-                          )}
-                        </Card>
-                      ))}
-                    </div>
-                    )}
-                  </div>
-                  );
-                })}
+            {isAdmin && (
+              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="primary"
+                  className="flex-1 text-sm"
+                  onClick={() => {
+                    setSelectedPart(part);
+                    setIsAdjustModalOpen(true);
+                  }}
+                >
+                  <TrendingUp size={16} className="mr-1" />
+                  在庫調整
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="text-sm"
+                  onClick={() => {
+                    setSelectedPart(part);
+                    setIsOrderModalOpen(true);
+                  }}
+                >
+                  <FileText size={16} />
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="text-sm"
+                  onClick={() => handleEdit(part)}
+                >
+                  <Edit size={16} />
+                </Button>
+                <Button
+                  variant="danger"
+                  className="text-sm"
+                  onClick={() => handleDelete(part.id)}
+                >
+                  <Trash2 size={16} />
+                </Button>
               </div>
             )}
-          </div>
-        );
-      })}
-
+          </Card>
+            ))}
+            </div>
+          )}
+        </div>
+      ))}
 
       {filteredParts.length === 0 && (
         <Card className="text-center py-12">

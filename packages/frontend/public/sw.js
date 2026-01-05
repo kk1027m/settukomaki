@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sets-carton-v3';
+const CACHE_NAME = 'sets-carton-v4';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -41,13 +41,18 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // POST/PUT/DELETEリクエスト（ファイルアップロード等）はService Workerをスキップ
+  if (request.method !== 'GET') {
+    return;
+  }
+
   // APIリクエストの場合：常にネットワークから取得
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request)
         .catch(() => {
           // API呼び出し失敗時は何もしない（エラーをアプリ側で処理）
-          return new Response(JSON.stringify({ error: 'オフラインです' }), {
+          return new Response(JSON.stringify({ error: 'ネットワークエラー' }), {
             status: 503,
             headers: { 'Content-Type': 'application/json' }
           });
@@ -95,7 +100,7 @@ self.addEventListener('fetch', (event) => {
             return cachedResponse;
           }
           // キャッシュにもない場合
-          return new Response('オフラインです', {
+          return new Response('ネットワークエラー', {
             status: 503,
             statusText: 'Service Unavailable'
           });
