@@ -15,7 +15,8 @@ const getUploadDir = () => {
 
 export const storageConfig = {
   uploadDir: getUploadDir(),
-  maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '5242880'), // 5MB
+  // 4MB limit to stay under Vercel's 4.5MB serverless function body size limit
+  maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '4194304'), // 4MB
   allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'],
   allowedExtensions: ['.jpg', '.jpeg', '.png', '.pdf'],
 };

@@ -143,9 +143,9 @@ export function FileUpload({ entityType, entityId, files, onFilesChange, disable
         }
       }
 
-      // Final size check
-      if (getFileSizeMB(processedFile) > 5) {
-        toast.error('ファイルサイズは5MB以下にしてください');
+      // Final size check (4MB limit due to Vercel serverless constraints)
+      if (getFileSizeMB(processedFile) > 4) {
+        toast.error('ファイルサイズは4MB以下にしてください');
         return;
       }
 
