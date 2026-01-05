@@ -161,6 +161,7 @@ export function FileUpload({ entityType, entityId, files, onFilesChange, disable
           headers: {
             'Content-Type': 'multipart/form-data',
           },
+          timeout: 120000, // 2分のタイムアウト（大きなファイル用）
         }
       );
 
