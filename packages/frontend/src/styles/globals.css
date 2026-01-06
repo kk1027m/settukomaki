@@ -5,7 +5,23 @@
 @layer base {
   html, body {
     @apply bg-gray-50 text-gray-900;
+    overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
+  }
+
+  html {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #root {
+    height: 100%;
+    overflow: hidden;
   }
 }
 

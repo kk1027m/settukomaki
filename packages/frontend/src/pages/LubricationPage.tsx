@@ -99,6 +99,15 @@ export default function LubricationPage() {
     loadPoints();
   }, []);
 
+  // プルトゥリフレッシュのイベントリスナー
+  useEffect(() => {
+    const handlePullToRefresh = () => {
+      loadPoints();
+    };
+    window.addEventListener('pulltorefresh', handlePullToRefresh);
+    return () => window.removeEventListener('pulltorefresh', handlePullToRefresh);
+  }, []);
+
   const loadPoints = async () => {
     try {
       const response = await api.get('/lubrication/points');

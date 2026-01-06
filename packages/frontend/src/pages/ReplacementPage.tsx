@@ -101,6 +101,15 @@ export default function ReplacementPage() {
     loadSchedules();
   }, []);
 
+  // プルトゥリフレッシュのイベントリスナー
+  useEffect(() => {
+    const handlePullToRefresh = () => {
+      loadSchedules();
+    };
+    window.addEventListener('pulltorefresh', handlePullToRefresh);
+    return () => window.removeEventListener('pulltorefresh', handlePullToRefresh);
+  }, []);
+
   const loadSchedules = async () => {
     try {
       const response = await api.get('/replacements/schedules');

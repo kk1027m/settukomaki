@@ -114,6 +114,15 @@ export default function PartsPage() {
     loadParts();
   }, []);
 
+  // プルトゥリフレッシュのイベントリスナー
+  useEffect(() => {
+    const handlePullToRefresh = () => {
+      loadParts();
+    };
+    window.addEventListener('pulltorefresh', handlePullToRefresh);
+    return () => window.removeEventListener('pulltorefresh', handlePullToRefresh);
+  }, []);
+
   const loadParts = async () => {
     try {
       const response = await api.get('/parts');
