@@ -19,6 +19,8 @@ router.use(authenticate);
 
 // Replacement schedules
 router.get('/schedules', getReplacementSchedules);
+router.put('/schedules/sort-order', updateReplacementSortOrder);
+
 router.get('/schedules/:id', getReplacementScheduleById);
 router.post('/schedules', createReplacementSchedule);
 router.put('/schedules/:id', updateReplacementSchedule);
@@ -30,7 +32,5 @@ router.get('/schedules/:id/records', getReplacementRecords);
 
 // Alerts
 router.get('/alerts', getAlerts);
-
-router.put('/schedules/sort-order', updateReplacementSortOrder);
 
 export default router;

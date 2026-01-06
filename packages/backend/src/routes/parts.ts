@@ -15,6 +15,8 @@ router.get('/low-stock', partController.getLowStockParts);
 
 router.get('/order-requests', partController.getOrderRequests);
 
+router.put('/sort-order', partController.updateSortOrder);
+
 router.get('/:id', partController.getPartById);
 
 router.post(
@@ -55,5 +57,4 @@ router.post(
   partController.orderRequest
 );
 
-router.put('/sort-order', partController.updateSortOrder);
 export default router;
