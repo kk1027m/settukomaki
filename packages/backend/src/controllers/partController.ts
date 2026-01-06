@@ -21,11 +21,7 @@ export const getParts = async (req: AuthRequest, res: Response, next: any) => {
       FROM parts p
       WHERE p.is_active = true
       ORDER BY
-        p.unit_name NULLS LAST,
-        CASE
-          WHEN p.current_stock < p.min_stock THEN 0
-          ELSE 1
-        END,
+        p.sort_order ASC,
         p.part_name
     `);
 
