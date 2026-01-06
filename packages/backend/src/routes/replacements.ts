@@ -9,6 +9,7 @@ import {
   performReplacement,
   getReplacementRecords,
   getAlerts,
+  updateReplacementSortOrder,
 } from '../controllers/replacementController';
 
 const router = Router();
@@ -29,5 +30,7 @@ router.get('/schedules/:id/records', getReplacementRecords);
 
 // Alerts
 router.get('/alerts', getAlerts);
+
+router.put('/schedules/sort-order', updateReplacementSortOrder);
 
 export default router;

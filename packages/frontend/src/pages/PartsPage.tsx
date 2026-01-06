@@ -7,6 +7,9 @@ import { Input } from '../components/common/Input';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { SortableItem } from '../components/common/SortableItem';
 
 interface Part {
   id: number;
@@ -61,6 +64,45 @@ export default function PartsPage() {
     urgency: 'normal' as 'normal' | 'urgent',
     notes: '',
   });
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  // Handle drag end for sorting
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeId = Number(active.id);
+    const overId = Number(over.id);
+
+    // Find and update parts array
+    const oldIndex = parts.findIndex(p => p.id === activeId);
+    const newIndex = parts.findIndex(p => p.id === overId);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newParts = arrayMove(parts, oldIndex, newIndex);
+      setParts(newParts);
+
+      // Save sort order to backend
+      try {
+        const items = newParts.map((part, index) => ({
+          id: part.id,
+          sort_order: index,
+        }));
+        await api.put('/parts/sort-order', { items });
+      } catch (error) {
+        toast.error('並び替えの保存に失敗しました');
+        loadParts(); // Reload to revert
+      }
+    }
+  };
 
   useEffect(() => {
     loadParts();
@@ -304,13 +346,15 @@ export default function PartsPage() {
                       <span className="text-sm text-gray-400">({partsInGroup.length}件)</span>
                     </div>
                     {isExpanded && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {partsInGroup.map((part) => (
-                        <Card
-                          key={part.id}
-                          onClick={() => handleView(part)}
-                          className={`cursor-pointer hover:shadow-lg transition-shadow ${part.needs_order ? 'border-2 border-orange-300' : ''}`}
-                        >
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                      <SortableContext items={partsInGroup.map(p => p.id)} strategy={verticalListSortingStrategy}>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                          {partsInGroup.map((part) => (
+                            <SortableItem key={part.id} id={part.id} disabled={!isAdmin}>
+                              <Card
+                                onClick={() => handleView(part)}
+                                className={`cursor-pointer hover:shadow-lg transition-shadow ${part.needs_order ? 'border-2 border-orange-300' : ''}`}
+                              >
                           <div className="flex justify-between items-start mb-3">
                             <div>
                               {part.unit_name && (
@@ -381,9 +425,12 @@ export default function PartsPage() {
                               </Button>
                             </div>
                           )}
-                        </Card>
-                      ))}
-                    </div>
+                              </Card>
+                            </SortableItem>
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
                     )}
                   </div>
                   );

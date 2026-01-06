@@ -8,6 +8,9 @@ import { ImageUpload, Attachment } from '../components/common/ImageUpload';
 import { api, API_URL } from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { SortableItem } from '../components/common/SortableItem';
 import axios from 'axios';
 
 interface LubricationPoint {
@@ -46,6 +49,45 @@ export default function LubricationPage() {
     cycle_days: 30,
     description: '',
   });
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  // Handle drag end for sorting
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeId = Number(active.id);
+    const overId = Number(over.id);
+
+    // Find and update points array
+    const oldIndex = points.findIndex(p => p.id === activeId);
+    const newIndex = points.findIndex(p => p.id === overId);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newPoints = arrayMove(points, oldIndex, newIndex);
+      setPoints(newPoints);
+
+      // Save sort order to backend
+      try {
+        const items = newPoints.map((point, index) => ({
+          id: point.id,
+          sort_order: index,
+        }));
+        await api.put('/lubrication/points/sort-order', { items });
+      } catch (error) {
+        toast.error('並び替えの保存に失敗しました');
+        loadPoints(); // Reload to revert
+      }
+    }
+  };
 
   useEffect(() => {
     loadPoints();
@@ -369,13 +411,15 @@ export default function LubricationPage() {
                         <h3>{unitName}</h3>
                       </div>
                       {expandedUnits.has(machineUnitKey) && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {unitPoints.map((point) => (
-          <Card
-            key={point.id}
-            onClick={() => handleView(point)}
-            className="cursor-pointer hover:shadow-lg transition-shadow"
-          >
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                          <SortableContext items={unitPoints.map(p => p.id)} strategy={verticalListSortingStrategy}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {unitPoints.map((point) => (
+                                <SortableItem key={point.id} id={point.id} disabled={!isAdmin}>
+                                  <Card
+                                    onClick={() => handleView(point)}
+                                    className="cursor-pointer hover:shadow-lg transition-shadow"
+                                  >
             {point.thumbnail && (
               <div className="mb-3 rounded-lg overflow-hidden bg-gray-100">
                 {thumbnailUrls[point.id] ? (
@@ -455,9 +499,12 @@ export default function LubricationPage() {
                 </Button>
               </div>
             )}
-          </Card>
-                          ))}
-                        </div>
+                                  </Card>
+                                </SortableItem>
+                              ))}
+                            </div>
+                          </SortableContext>
+                        </DndContext>
                       )}
                     </div>
                   );

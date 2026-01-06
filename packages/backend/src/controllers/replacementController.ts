@@ -25,7 +25,7 @@ export const getReplacementSchedules = async (req: AuthRequest, res: Response, n
         LIMIT 1
       ) rr ON true
       WHERE rs.is_active = true
-      ORDER BY rs.unit_name NULLS LAST, days_until_due ASC NULLS FIRST, rs.machine_name
+      ORDER BY rs.sort_order ASC, rs.unit_name NULLS LAST, rs.machine_name
     `);
 
     const schedulesWithStatus = result.rows.map(schedule => {
@@ -319,6 +319,32 @@ export const getAlerts = async (req: AuthRequest, res: Response, next: any) => {
     res.json({
       success: true,
       data: result.rows,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// 並び替え順序を更新
+export const updateReplacementSortOrder = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { items } = req.body;
+
+    if (!Array.isArray(items)) {
+      throw new AppError('Invalid request body', 400);
+    }
+
+    for (const item of items) {
+      await query(
+        'UPDATE replacement_schedules SET sort_order = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [item.sort_order, item.id]
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Sort order updated successfully',
     });
   } catch (error) {
     next(error);

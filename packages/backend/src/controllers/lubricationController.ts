@@ -25,7 +25,7 @@ export const getLubricationPoints = async (req: AuthRequest, res: Response, next
         LIMIT 1
       ) lr ON true
       WHERE lp.is_active = true
-      ORDER BY lp.unit_name NULLS LAST, days_until_due ASC NULLS FIRST, lp.machine_name
+      ORDER BY lp.sort_order ASC, lp.unit_name NULLS LAST, lp.machine_name
     `);
 
     const pointsWithStatus = result.rows.map(point => {
@@ -313,6 +313,32 @@ export const getAlerts = async (req: AuthRequest, res: Response, next: any) => {
     res.json({
       success: true,
       data: result.rows,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// 並び替え順序を更新
+export const updateLubricationSortOrder = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { items } = req.body;
+
+    if (!Array.isArray(items)) {
+      throw new AppError('Invalid request body', 400);
+    }
+
+    for (const item of items) {
+      await query(
+        'UPDATE lubrication_points SET sort_order = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [item.sort_order, item.id]
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Sort order updated successfully',
     });
   } catch (error) {
     next(error);

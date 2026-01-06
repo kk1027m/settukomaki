@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import * as lubricationController from '../controllers/lubricationController';
+import { updateLubricationSortOrder } from '../controllers/lubricationController';
 import { authenticate } from '../middleware/auth';
 import { validateRequest } from '../middleware/validateRequest';
 
@@ -36,5 +37,7 @@ router.post(
 router.get('/points/:id/records', lubricationController.getLubricationRecords);
 
 router.get('/alerts', lubricationController.getAlerts);
+
+router.put('/points/sort-order', updateLubricationSortOrder);
 
 export default router;
