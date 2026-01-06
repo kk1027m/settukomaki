@@ -206,7 +206,7 @@ export const deletePart = async (req: AuthRequest, res: Response, next: any) => 
 export const adjustStock = async (req: AuthRequest, res: Response, next: any) => {
   try {
     const { id } = req.params;
-    const { action_type, quantity, notes } = req.body;
+    const { action_type, quantity, notes, reduce_ordered } = req.body;
 
     // Get current part
     const partResult = await query('SELECT * FROM parts WHERE id = $1', [id]);
@@ -218,6 +218,8 @@ export const adjustStock = async (req: AuthRequest, res: Response, next: any) =>
     const part = partResult.rows[0];
     const stock_before = part.current_stock;
     let stock_after = stock_before;
+    let ordered_quantity_after = part.ordered_quantity || 0;
+    let historyActionType = action_type;
 
     // Calculate new stock
     if (action_type === '入庫') {
@@ -242,7 +244,7 @@ export const adjustStock = async (req: AuthRequest, res: Response, next: any) =>
       `INSERT INTO part_history (part_id, action_type, quantity, stock_before, stock_after, performed_by, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [id, action_type, quantity, stock_before, stock_after, req.user?.id, notes || null]
+      [id, historyActionType, quantity, stock_before, stock_after, req.user?.id, notes || null]
     );
 
     // Get updated part
@@ -385,6 +387,31 @@ export const getOrderRequests = async (req: AuthRequest, res: Response, next: an
     res.json({
       success: true,
       data: result.rows,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 並び替え順序を更新
+export const updateSortOrder = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { items } = req.body;
+
+    if (!Array.isArray(items)) {
+      throw new AppError('Invalid request body', 400);
+    }
+
+    for (const item of items) {
+      await query(
+        'UPDATE parts SET sort_order = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [item.sort_order, item.id]
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Sort order updated successfully',
     });
   } catch (error) {
     next(error);

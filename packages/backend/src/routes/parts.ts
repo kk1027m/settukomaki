@@ -36,7 +36,7 @@ router.delete('/:id', partController.deletePart);
 router.post(
   '/:id/adjust',
   [
-    body('action_type').isIn(['入庫', '出庫', '調整']).withMessage('Invalid action type'),
+    body('action_type').isIn(['入庫', '出庫']).withMessage('Invalid action type'),
     body('quantity').isInt({ min: 1 }).withMessage('Quantity must be a positive integer'),
     validateRequest,
   ],
@@ -55,4 +55,5 @@ router.post(
   partController.orderRequest
 );
 
+router.put('/sort-order', partController.updateSortOrder);
 export default router;

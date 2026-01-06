@@ -21,6 +21,7 @@ interface Part {
   description: string | null;
   stock_status: 'sufficient' | 'low' | 'out';
   needs_order: boolean;
+  ordered_quantity: number;
 }
 
 export default function PartsPage() {
@@ -50,9 +51,10 @@ export default function PartsPage() {
     description: '',
   });
   const [adjustData, setAdjustData] = useState({
-    action_type: '入庫' as '入庫' | '出庫' | '調整',
+    action_type: '入庫' as '入庫' | '出庫',
     quantity: 1,
     notes: '',
+    reduce_ordered: false,
   });
   const [orderData, setOrderData] = useState({
     quantity: 1,
@@ -102,7 +104,7 @@ export default function PartsPage() {
       await api.post(`/parts/${selectedPart.id}/adjust`, adjustData);
       toast.success('在庫を調整しました');
       setIsAdjustModalOpen(false);
-      setAdjustData({ action_type: '入庫', quantity: 1, notes: '' });
+      setAdjustData({ action_type: '入庫', quantity: 1, notes: '', reduce_ordered: false });
       loadParts();
     } catch (error: any) {
       toast.error(error.response?.data?.error || '在庫調整に失敗しました');
@@ -499,7 +501,6 @@ export default function PartsPage() {
             >
               <option value="入庫">入庫</option>
               <option value="出庫">出庫</option>
-              <option value="調整">調整</option>
             </select>
           </div>
           <Input
@@ -510,6 +511,20 @@ export default function PartsPage() {
             onChange={(e) => setAdjustData({ ...adjustData, quantity: parseInt(e.target.value) })}
             required
           />
+          {adjustData.action_type === '入庫' && selectedPart && (selectedPart.ordered_quantity || 0) > 0 && (
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="reduce_ordered"
+                checked={adjustData.reduce_ordered}
+                onChange={(e) => setAdjustData({ ...adjustData, reduce_ordered: e.target.checked })}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="reduce_ordered" className="text-sm text-gray-700">
+                発注数から引く（発注中: {selectedPart.ordered_quantity}{selectedPart.unit}）
+              </label>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">メモ</label>
             <textarea
