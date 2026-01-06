@@ -25,12 +25,13 @@ export function SortableItem({ id, children, disabled = false }: SortableItemPro
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group">
+    <div ref={setNodeRef} style={style} className="relative">
       {!disabled && (
         <div
           {...attributes}
           {...listeners}
-          className="absolute right-2 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing p-2 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute right-1 top-1 cursor-grab active:cursor-grabbing p-2 text-gray-400 hover:text-gray-600 bg-white/80 rounded z-20 touch-none"
+          onClick={(e) => e.stopPropagation()}
         >
           <GripVertical size={20} />
         </div>
