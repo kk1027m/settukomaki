@@ -57,4 +57,7 @@ router.put(
 
 router.delete('/:id', requireAdmin, maintenanceProceduresController.deleteProcedure);
 
+// Sort order route - admin only
+router.put('/sort-order', requireAdmin, maintenanceProceduresController.updateProcedureSortOrder);
+
 export default router;

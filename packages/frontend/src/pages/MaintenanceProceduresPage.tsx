@@ -9,6 +9,9 @@ import { api, API_URL } from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { DndContext, closestCenter, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableItem } from '../components/common/SortableItem';
 
 interface MaintenanceProcedure {
   id: number;
@@ -71,6 +74,50 @@ export default function MaintenanceProceduresPage() {
     machine_name: '',
     unit_name: '',
   });
+
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
+
+  // Handle drag end for reordering procedures
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeId = Number(active.id);
+    const overId = Number(over.id);
+
+    const oldIndex = procedures.findIndex(p => p.id === activeId);
+    const newIndex = procedures.findIndex(p => p.id === overId);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newProcedures = arrayMove(procedures, oldIndex, newIndex);
+      setProcedures(newProcedures);
+
+      try {
+        const items = newProcedures.map((procedure, index) => ({
+          id: procedure.id,
+          sort_order: index,
+        }));
+        await api.put('/maintenance-procedures/sort-order', { items });
+      } catch (error) {
+        toast.error('並び替えの保存に失敗しました');
+        loadProcedures();
+      }
+    }
+  };
 
   useEffect(() => {
     loadProcedures();
@@ -186,6 +233,7 @@ export default function MaintenanceProceduresPage() {
   };
 
   // Load images as blobs for detail modal
+
   useEffect(() => {
     const loadImageUrls = async () => {
       if (!isDetailModalOpen || attachments.length === 0) return;
@@ -326,7 +374,7 @@ export default function MaintenanceProceduresPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">作業手順</h1>
+        <h1 className="text-3xl font-bold">作業標準</h1>
         {isAdmin && (
           <Button
             onClick={() => {
@@ -492,8 +540,11 @@ export default function MaintenanceProceduresPage() {
                               <span className="text-sm text-gray-500 ml-2">({unitProcedures.length}件)</span>
                             </div>
                             {expandedUnits.has(machineUnitKey) && (
-                              <div className="space-y-4">
-                                {unitProcedures.map((procedure) => (
+                              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                <SortableContext items={unitProcedures.map(p => p.id)} strategy={verticalListSortingStrategy}>
+                                  <div className="space-y-4">
+                                    {unitProcedures.map((procedure) => (
+                                      <SortableItem key={procedure.id} id={procedure.id} disabled={!isAdmin}>
             <Card
               key={procedure.id}
               className="hover:shadow-lg transition-shadow cursor-pointer"
@@ -505,16 +556,8 @@ export default function MaintenanceProceduresPage() {
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       {CATEGORY_LABELS[procedure.category]}
                     </span>
-                    {procedure.machine_name && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        {procedure.machine_name}
-                      </span>
-                    )}
-                    {procedure.unit_name && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        {procedure.unit_name}
-                      </span>
-                    )}
+
+
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
                     {procedure.title}
@@ -523,12 +566,8 @@ export default function MaintenanceProceduresPage() {
                     <span>
                       作成者: {procedure.created_by_full_name || procedure.created_by_username}
                     </span>
-                    <span>作成日時: {formatDate(procedure.created_at)}</span>
-                    {procedure.updated_at !== procedure.created_at && (
-                      <span className="text-blue-600">
-                        (編集済み: {formatDate(procedure.updated_at)})
-                      </span>
-                    )}
+
+
                   </div>
                 </div>
                 {isAdmin && (
@@ -549,8 +588,11 @@ export default function MaintenanceProceduresPage() {
                 )}
               </div>
             </Card>
-                                ))}
-                              </div>
+                                      </SortableItem>
+                                    ))}
+                                  </div>
+                                </SortableContext>
+                              </DndContext>
                             )}
                           </div>
                         );
@@ -634,7 +676,7 @@ export default function MaintenanceProceduresPage() {
                 setFormData({ ...formData, content: e.target.value })
               }
               required
-              placeholder="作業手順を入力してください"
+              placeholder="作業標準を入力してください"
             />
           </div>
 

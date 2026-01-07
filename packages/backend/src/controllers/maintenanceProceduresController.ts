@@ -46,7 +46,7 @@ export const getProcedures = async (req: AuthRequest, res: Response, next: any) 
       paramIndex++;
     }
 
-    sql += ' ORDER BY mp.created_at DESC';
+    sql += ' ORDER BY mp.sort_order ASC, mp.machine_name NULLS LAST, mp.unit_name NULLS LAST, mp.created_at DESC';
 
     const result = await query(sql, params);
 
@@ -291,6 +291,31 @@ export const getUnitNames = async (req: AuthRequest, res: Response, next: any) =
     res.json({
       success: true,
       data: result.rows.map(r => r.unit_name),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update sort order (admin only)
+export const updateProcedureSortOrder = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { items } = req.body;
+
+    if (!Array.isArray(items)) {
+      throw new AppError('Invalid request body', 400);
+    }
+
+    for (const item of items) {
+      await query(
+        'UPDATE maintenance_procedures SET sort_order = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [item.sort_order, item.id]
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Sort order updated successfully',
     });
   } catch (error) {
     next(error);
