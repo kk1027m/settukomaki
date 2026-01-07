@@ -20,10 +20,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          const userData = await authService.getMe();
+          // タイムアウト付きでユーザー情報を取得（5秒）
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout')), 5000)
+          );
+          const userData = await Promise.race([
+            authService.getMe(),
+            timeoutPromise
+          ]);
           setUser(userData);
         } catch (error) {
+          // エラー時はトークンとユーザー情報を削除
           localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
         }
       }
       setLoading(false);
