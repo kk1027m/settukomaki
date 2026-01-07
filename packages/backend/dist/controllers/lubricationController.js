@@ -1,0 +1,285 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.updateLubricationSortOrder = exports.getAlerts = exports.getLubricationRecords = exports.performLubrication = exports.deleteLubricationPoint = exports.updateLubricationPoint = exports.createLubricationPoint = exports.getLubricationPointById = exports.getLubricationPoints = void 0;
+const connection_1 = require("../database/connection");
+const errorHandler_1 = require("../middleware/errorHandler");
+const dateHelper_1 = require("../utils/dateHelper");
+const topicsController_1 = require("./topicsController");
+const getLubricationPoints = async (req, res, next) => {
+    try {
+        const result = await (0, connection_1.query)(`
+      SELECT
+        lp.*,
+        lr.performed_at as last_performed,
+        lr.next_due_date,
+        CASE
+          WHEN lr.next_due_date IS NULL THEN 0
+          ELSE (lr.next_due_date - CURRENT_DATE)
+        END as days_until_due
+      FROM lubrication_points lp
+      LEFT JOIN LATERAL (
+        SELECT performed_at, next_due_date
+        FROM lubrication_records
+        WHERE point_id = lp.id
+        ORDER BY performed_at DESC
+        LIMIT 1
+      ) lr ON true
+      WHERE lp.is_active = true
+      ORDER BY lp.sort_order ASC, lp.unit_name NULLS LAST, lp.machine_name
+    `);
+        const pointsWithStatus = result.rows.map(point => {
+            let status = 'ok';
+            const daysUntilDue = point.days_until_due;
+            if (daysUntilDue === null || daysUntilDue === undefined) {
+                status = 'overdue';
+            }
+            else if (daysUntilDue < 0) {
+                status = 'overdue';
+            }
+            else if (daysUntilDue <= 3) {
+                status = 'due_soon';
+            }
+            else if (daysUntilDue <= 7) {
+                status = 'upcoming';
+            }
+            return {
+                ...point,
+                status,
+            };
+        });
+        res.json({
+            success: true,
+            data: pointsWithStatus,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getLubricationPoints = getLubricationPoints;
+const getLubricationPointById = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const result = await (0, connection_1.query)('SELECT * FROM lubrication_points WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            throw new errorHandler_1.AppError('Lubrication point not found', 404);
+        }
+        res.json({
+            success: true,
+            data: result.rows[0],
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getLubricationPointById = getLubricationPointById;
+const createLubricationPoint = async (req, res, next) => {
+    try {
+        const { machine_name, unit_name, location, cycle_days, description } = req.body;
+        const result = await (0, connection_1.query)(`INSERT INTO lubrication_points (machine_name, unit_name, location, cycle_days, description, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`, [machine_name, unit_name || null, location, cycle_days, description || null, req.user?.id]);
+        // Create notification topic
+        const pointData = result.rows[0];
+        await (0, topicsController_1.createNotificationTopic)('給油箇所が追加されました', `${machine_name}${unit_name ? ' - ' + unit_name : ''} - ${location} の給油箇所が追加されました。`, req.user?.id || 1);
+        res.status(201).json({
+            success: true,
+            data: pointData,
+        });
+    }
+    catch (error) {
+        if (error.code === '23505') {
+            next(new errorHandler_1.AppError('Lubrication point already exists for this machine and location', 409));
+        }
+        else {
+            next(error);
+        }
+    }
+};
+exports.createLubricationPoint = createLubricationPoint;
+const updateLubricationPoint = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { machine_name, unit_name, location, cycle_days, description, is_active } = req.body;
+        const updates = [];
+        const values = [];
+        let paramCount = 1;
+        if (machine_name !== undefined) {
+            updates.push(`machine_name = $${paramCount++}`);
+            values.push(machine_name);
+        }
+        if (unit_name !== undefined) {
+            updates.push(`unit_name = $${paramCount++}`);
+            values.push(unit_name);
+        }
+        if (location !== undefined) {
+            updates.push(`location = $${paramCount++}`);
+            values.push(location);
+        }
+        if (cycle_days !== undefined) {
+            updates.push(`cycle_days = $${paramCount++}`);
+            values.push(cycle_days);
+        }
+        if (description !== undefined) {
+            updates.push(`description = $${paramCount++}`);
+            values.push(description);
+        }
+        if (is_active !== undefined) {
+            updates.push(`is_active = $${paramCount++}`);
+            values.push(is_active);
+        }
+        if (updates.length === 0) {
+            throw new errorHandler_1.AppError('No fields to update', 400);
+        }
+        updates.push(`updated_at = CURRENT_TIMESTAMP`);
+        values.push(id);
+        const result = await (0, connection_1.query)(`UPDATE lubrication_points SET ${updates.join(', ')}
+       WHERE id = $${paramCount}
+       RETURNING *`, values);
+        if (result.rows.length === 0) {
+            throw new errorHandler_1.AppError('Lubrication point not found', 404);
+        }
+        // Create notification topic for edit
+        const updatedPoint = result.rows[0];
+        await (0, topicsController_1.createNotificationTopic)('給油箇所が編集されました', `${updatedPoint.machine_name}${updatedPoint.unit_name ? ' - ' + updatedPoint.unit_name : ''} - ${updatedPoint.location} の給油箇所が編集されました。`, req.user?.id || 1);
+        res.json({
+            success: true,
+            data: result.rows[0],
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.updateLubricationPoint = updateLubricationPoint;
+const deleteLubricationPoint = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const result = await (0, connection_1.query)('DELETE FROM lubrication_points WHERE id = $1 RETURNING id', [id]);
+        if (result.rows.length === 0) {
+            throw new errorHandler_1.AppError('Lubrication point not found', 404);
+        }
+        res.json({
+            success: true,
+            message: 'Lubrication point deleted successfully',
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.deleteLubricationPoint = deleteLubricationPoint;
+const performLubrication = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { performed_at, notes } = req.body;
+        // Get lubrication point
+        const pointResult = await (0, connection_1.query)('SELECT * FROM lubrication_points WHERE id = $1', [id]);
+        if (pointResult.rows.length === 0) {
+            throw new errorHandler_1.AppError('Lubrication point not found', 404);
+        }
+        const point = pointResult.rows[0];
+        // Calculate next due date
+        const performedDate = performed_at ? new Date(performed_at) : new Date();
+        const nextDueDate = (0, dateHelper_1.addDays)(performedDate, point.cycle_days);
+        // Insert lubrication record
+        const result = await (0, connection_1.query)(`INSERT INTO lubrication_records (point_id, performed_at, performed_by, next_due_date, notes)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`, [id, performedDate, req.user?.id, nextDueDate, notes || null]);
+        // Create notification topic
+        await (0, topicsController_1.createNotificationTopic)('給油が完了しました', `${point.machine_name}${point.unit_name ? ' - ' + point.unit_name : ''} - ${point.location} の給油が完了しました。`, req.user?.id || 1);
+        res.status(201).json({
+            success: true,
+            data: result.rows[0],
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.performLubrication = performLubrication;
+const getLubricationRecords = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const result = await (0, connection_1.query)(`SELECT lr.*, u.username as performed_by_username
+       FROM lubrication_records lr
+       LEFT JOIN users u ON lr.performed_by = u.id
+       WHERE lr.point_id = $1
+       ORDER BY lr.performed_at DESC
+       LIMIT 50`, [id]);
+        res.json({
+            success: true,
+            data: result.rows,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getLubricationRecords = getLubricationRecords;
+const getAlerts = async (req, res, next) => {
+    try {
+        const result = await (0, connection_1.query)(`
+      SELECT
+        lp.id,
+        lp.machine_name,
+        lp.unit_name,
+        lp.location,
+        lp.cycle_days,
+        lr.performed_at as last_performed,
+        lr.next_due_date as due_date,
+        CASE
+          WHEN lr.next_due_date IS NULL THEN -999
+          ELSE (lr.next_due_date - CURRENT_DATE)
+        END as days_until_due,
+        CASE
+          WHEN lr.next_due_date IS NULL THEN 'overdue'
+          WHEN lr.next_due_date < CURRENT_DATE THEN 'overdue'
+          WHEN lr.next_due_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'due_soon'
+          WHEN lr.next_due_date <= CURRENT_DATE + INTERVAL '7 days' THEN 'upcoming'
+          ELSE 'ok'
+        END as status
+      FROM lubrication_points lp
+      LEFT JOIN LATERAL (
+        SELECT performed_at, next_due_date
+        FROM lubrication_records
+        WHERE point_id = lp.id
+        ORDER BY performed_at DESC
+        LIMIT 1
+      ) lr ON true
+      WHERE lp.is_active = true
+        AND (lr.next_due_date IS NULL OR lr.next_due_date <= CURRENT_DATE + INTERVAL '7 days')
+      ORDER BY lp.unit_name NULLS LAST, days_until_due ASC
+    `);
+        res.json({
+            success: true,
+            data: result.rows,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getAlerts = getAlerts;
+// 並び替え順序を更新
+const updateLubricationSortOrder = async (req, res, next) => {
+    try {
+        const { items } = req.body;
+        if (!Array.isArray(items)) {
+            throw new errorHandler_1.AppError('Invalid request body', 400);
+        }
+        for (const item of items) {
+            await (0, connection_1.query)('UPDATE lubrication_points SET sort_order = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [item.sort_order, item.id]);
+        }
+        res.json({
+            success: true,
+            message: 'Sort order updated successfully',
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.updateLubricationSortOrder = updateLubricationSortOrder;
+//# sourceMappingURL=lubricationController.js.map
