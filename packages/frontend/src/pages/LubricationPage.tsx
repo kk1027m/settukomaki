@@ -304,7 +304,7 @@ export default function LubricationPage() {
       upcoming: '7日以内',
       ok: '正常',
     };
-    return <span className={`badge ${badges[status as keyof typeof badges]}`}>{labels[status as keyof typeof labels]}</span>;
+    return <span className={`badge mt-2 ${badges[status as keyof typeof badges]}`}>{labels[status as keyof typeof labels]}</span>;
   };
 
   if (loading) {
@@ -454,7 +454,7 @@ export default function LubricationPage() {
                 )}
               </div>
             )}
-            <div className="flex justify-between items-start mb-3">
+            <div className="flex justify-between items-start mb-3 mt-8">
               <div>
                 <p className="text-xs text-blue-600 font-medium">{point.machine_name}</p>
                 {point.unit_name && (
