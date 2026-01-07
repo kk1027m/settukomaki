@@ -1,15 +1,31 @@
 // Vercel serverless function handler
 const express = require('express');
 
+// Create wrapper app
+const wrapper = express();
+
+// Add test endpoint FIRST (before loading main app)
+wrapper.get('/api-test', (req, res) => {
+  res.json({
+    test: 'direct from api/index.js',
+    cloudinary: {
+      configured: !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET),
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME ? 'set' : 'not set',
+      apiKey: process.env.CLOUDINARY_API_KEY ? 'set' : 'not set', 
+      apiSecret: process.env.CLOUDINARY_API_SECRET ? 'set' : 'not set',
+    }
+  });
+});
+
 // Try to load the real app
-let app;
 try {
-  app = require('../dist/index.js').default;
+  const app = require('../dist/index.js').default;
   console.log('App loaded successfully');
+  // Forward all other requests to the main app
+  wrapper.use(app);
 } catch (error) {
   console.error('Failed to load app:', error);
-  app = express();
-  app.use((req, res) => {
+  wrapper.use((req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to load app',
@@ -19,18 +35,5 @@ try {
   });
 }
 
-// Add direct test endpoint for Cloudinary
-app.get('/api-test', (req, res) => {
-  res.json({
-    test: 'direct from api/index.js',
-    cloudinary: {
-      configured: !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET),
-      cloudName: process.env.CLOUDINARY_CLOUD_NAME ? 'set' : 'not set',
-      apiKey: process.env.CLOUDINARY_API_KEY ? 'set' : 'not set',
-      apiSecret: process.env.CLOUDINARY_API_SECRET ? 'set' : 'not set',
-    }
-  });
-});
-
 // Export for Vercel serverless
-module.exports = app;
+module.exports = wrapper;
