@@ -2,8 +2,19 @@ import { Router } from 'express';
 import * as uploadController from '../controllers/uploadController';
 import { authenticate } from '../middleware/auth';
 import { upload } from '../middleware/uploadHandler';
+import { isCloudinaryConfigured } from '../config/cloudinary';
 
 const router = Router();
+
+// Debug endpoint to check Cloudinary configuration
+router.get('/debug/config', (req, res) => {
+  res.json({
+    cloudinaryConfigured: isCloudinaryConfigured(),
+    hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
+    hasApiKey: !!process.env.CLOUDINARY_API_KEY,
+    hasApiSecret: !!process.env.CLOUDINARY_API_SECRET,
+  });
+});
 
 // Image retrieval doesn't require authentication (public access via image ID)
 router.get('/:id', uploadController.getFile);
