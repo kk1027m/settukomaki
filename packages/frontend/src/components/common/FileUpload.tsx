@@ -33,6 +33,14 @@ export function FileUpload({ entityType, entityId, files, onFilesChange, disable
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Helper to get full URL (handles both Cloudinary and local URLs)
+  const getFullUrl = (url: string) => {
+    if (url.startsWith('http')) {
+      return url; // Cloudinary URL - use directly
+    }
+    return `${API_URL}${url}`; // Local URL - prepend API_URL
+  };
+
   // Load files as blobs and create object URLs
   useEffect(() => {
     const loadFiles = async () => {
@@ -144,7 +152,7 @@ export function FileUpload({ entityType, entityId, files, onFilesChange, disable
       }
 
       // Final size check (different limits for images vs PDFs due to Vercel constraints)
-      const maxSizeMB = file.type === 'application/pdf' ? 2 : 4;
+      const maxSizeMB = 10; // Cloudinary handles larger files
       if (getFileSizeMB(processedFile) > maxSizeMB) {
         if (file.type === 'application/pdf') {
           toast.error('PDFファイルは2MB以下にしてください（Vercel制限）');
@@ -324,7 +332,7 @@ export function FileUpload({ entityType, entityId, files, onFilesChange, disable
                   )
                 ) : (
                   <a
-                    href={`${API_URL}${file.url}`}
+                    href={getFullUrl(file.url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full h-full flex items-center justify-center hover:bg-gray-200 transition-colors"
