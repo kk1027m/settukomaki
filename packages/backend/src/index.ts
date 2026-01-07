@@ -42,7 +42,7 @@ app.use((req, res, next) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), cloudinary: { configured: !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET), hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME, hasApiKey: !!process.env.CLOUDINARY_API_KEY, hasApiSecret: !!process.env.CLOUDINARY_API_SECRET } });
 });
 
 // API Routes
