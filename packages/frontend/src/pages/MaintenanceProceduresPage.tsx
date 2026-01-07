@@ -571,7 +571,7 @@ export default function MaintenanceProceduresPage() {
                   </div>
                 </div>
                 {isAdmin && (
-                  <div className="flex gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex gap-2 ml-4 mt-8" onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="secondary"
                       onClick={() => handleEdit(procedure)}
