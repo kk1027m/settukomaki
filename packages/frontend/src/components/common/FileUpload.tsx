@@ -143,9 +143,14 @@ export function FileUpload({ entityType, entityId, files, onFilesChange, disable
         }
       }
 
-      // Final size check (4MB limit due to Vercel serverless constraints)
-      if (getFileSizeMB(processedFile) > 4) {
-        toast.error('ファイルサイズは4MB以下にしてください');
+      // Final size check (different limits for images vs PDFs due to Vercel constraints)
+      const maxSizeMB = file.type === 'application/pdf' ? 2 : 4;
+      if (getFileSizeMB(processedFile) > maxSizeMB) {
+        if (file.type === 'application/pdf') {
+          toast.error('PDFファイルは2MB以下にしてください（Vercel制限）');
+        } else {
+          toast.error('画像ファイルは4MB以下にしてください');
+        }
         return;
       }
 
