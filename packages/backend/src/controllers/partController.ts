@@ -217,9 +217,15 @@ export const adjustStock = async (req: AuthRequest, res: Response, next: any) =>
     let ordered_quantity_after = part.ordered_quantity || 0;
     let historyActionType = action_type;
 
-    // Calculate new stock
+    // Calculate new stock and min_stock adjustment
+    let min_stock_after = part.min_stock;
+
     if (action_type === '入庫') {
       stock_after = stock_before + quantity;
+      // 発注点が1以上の場合、入庫数分を減らす（0未満にはならない）
+      if (part.min_stock >= 1) {
+        min_stock_after = Math.max(0, part.min_stock - quantity);
+      }
     } else if (action_type === '出庫') {
       stock_after = stock_before - quantity;
       if (stock_after < 0) {
@@ -229,10 +235,10 @@ export const adjustStock = async (req: AuthRequest, res: Response, next: any) =>
       stock_after = quantity;
     }
 
-    // Update part stock
+    // Update part stock and min_stock
     await query(
-      'UPDATE parts SET current_stock = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [stock_after, id]
+      'UPDATE parts SET current_stock = $1, min_stock = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+      [stock_after, min_stock_after, id]
     );
 
     // Insert history record
