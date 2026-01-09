@@ -58,7 +58,9 @@ export const handleWebhook = async (req: Request, res: Response) => {
 export const runNotificationCron = async (req: Request, res: Response) => {
   try {
     // Verify cron secret to prevent unauthorized access
-    const cronSecret = req.headers['x-cron-secret'] || req.query.secret;
+    const authHeader = req.headers['authorization'];
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const cronSecret = bearerToken || req.headers['x-cron-secret'] || req.query.secret;
     if (cronSecret !== process.env.CRON_SECRET) {
       console.log('Invalid cron secret');
       return res.status(401).json({ error: 'Unauthorized' });
