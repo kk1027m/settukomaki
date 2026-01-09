@@ -18,7 +18,7 @@
   "crons": [
     {
       "path": "/api/line/cron?secret=${CRON_SECRET}",
-      "schedule": "0 23 * * *"
+      "schedule": "15 12 * * *"
     }
   ]
 }
