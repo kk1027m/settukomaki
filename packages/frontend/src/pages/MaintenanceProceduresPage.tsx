@@ -243,13 +243,18 @@ export default function MaintenanceProceduresPage() {
       for (const attachment of attachments) {
         if (attachment.mime_type?.startsWith('image/') && !imageUrls[attachment.id]) {
           try {
-            const response = await axios.get(`${API_URL}${attachment.url}`, {
-              responseType: 'blob',
-              timeout: 10000,
-            });
-            const blob = response.data;
-            const objectUrl = URL.createObjectURL(blob);
-            newImageUrls[attachment.id] = objectUrl;
+            // Cloudinary URLs can be used directly
+            if (attachment.url.startsWith('http')) {
+              newImageUrls[attachment.id] = attachment.url;
+            } else {
+              const response = await axios.get(`${API_URL}${attachment.url}`, {
+                responseType: 'blob',
+                timeout: 10000,
+              });
+              const blob = response.data;
+              const objectUrl = URL.createObjectURL(blob);
+              newImageUrls[attachment.id] = objectUrl;
+            }
           } catch (error) {
             console.error('Failed to load image:', attachment.id, error);
           }
@@ -785,7 +790,7 @@ export default function MaintenanceProceduresPage() {
                         </div>
                       ) : attachment.mime_type === 'application/pdf' ? (
                         <a
-                          href={`${API_URL}${attachment.url}`}
+                          href={attachment.url.startsWith('http') ? attachment.url : `${API_URL}${attachment.url}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"

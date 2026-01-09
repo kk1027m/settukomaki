@@ -39,14 +39,22 @@ export function ImageUpload({ entityType, entityId, images, onImagesChange, disa
         if (!imageUrls[image.id]) {
           try {
             console.log('Fetching image:', image.id, image.url);
-            const response = await axios.get(`${API_URL}${image.url}`, {
-              responseType: 'blob',
-              timeout: 10000
-            });
-            const blob = response.data;
-            const objectUrl = URL.createObjectURL(blob);
-            newImageUrls[image.id] = objectUrl;
-            console.log('Successfully loaded image:', image.id, 'Object URL:', objectUrl);
+
+            // Cloudinary URLs can be used directly
+            if (image.url.startsWith('http')) {
+              newImageUrls[image.id] = image.url;
+              console.log('Using Cloudinary URL directly:', image.id, image.url);
+            } else {
+              // Local URLs need to be fetched as blobs
+              const response = await axios.get(`${API_URL}${image.url}`, {
+                responseType: 'blob',
+                timeout: 10000
+              });
+              const blob = response.data;
+              const objectUrl = URL.createObjectURL(blob);
+              newImageUrls[image.id] = objectUrl;
+              console.log('Successfully loaded image:', image.id, 'Object URL:', objectUrl);
+            }
           } catch (error) {
             console.error('Failed to load image:', image.id, error);
           }

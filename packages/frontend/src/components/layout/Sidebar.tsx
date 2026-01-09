@@ -15,7 +15,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { to: '/lubrication', icon: Droplet, label: '給油管理' },
     { to: '/replacements', icon: Wrench, label: '部品交換管理' },
     { to: '/parts', icon: Package, label: '部品在庫' },
-    { to: '/maintenance-procedures', icon: FileText, label: '作業手順' },
+    { to: '/maintenance-procedures', icon: FileText, label: '作業標準' },
   ];
 
   // 問い合わせは一般ユーザーのみに表示

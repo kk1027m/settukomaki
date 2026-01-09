@@ -23,7 +23,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col h-screen">
       <Header onMenuClick={toggleSidebar} />
-      <div className="flex flex-1 pt-16 overflow-hidden">
+      <div className="flex flex-1 pt-16 md:pt-24 overflow-hidden">
         <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
         <div className="flex-1 md:ml-64 overflow-hidden">
           <PullToRefresh onRefresh={handleRefresh}>

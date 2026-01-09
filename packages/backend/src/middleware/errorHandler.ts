@@ -34,9 +34,11 @@ export const errorHandler = (
     });
   }
 
-  // Default error
+  // Default error - include details for debugging
   res.status(500).json({
     success: false,
     error: 'Internal server error',
+    details: err.message,
+    stack: err.stack,
   });
 };

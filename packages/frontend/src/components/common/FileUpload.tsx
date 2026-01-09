@@ -50,14 +50,22 @@ export function FileUpload({ entityType, entityId, files, onFilesChange, disable
         if (!fileUrls[file.id] && file.mime_type?.startsWith('image/')) {
           try {
             console.log('Fetching file:', file.id, file.url);
-            const response = await axios.get(`${API_URL}${file.url}`, {
-              responseType: 'blob',
-              timeout: 10000
-            });
-            const blob = response.data;
-            const objectUrl = URL.createObjectURL(blob);
-            newFileUrls[file.id] = objectUrl;
-            console.log('Successfully loaded file:', file.id, 'Object URL:', objectUrl);
+
+            // Cloudinary URLs can be used directly
+            if (file.url.startsWith('http')) {
+              newFileUrls[file.id] = file.url;
+              console.log('Using Cloudinary URL directly:', file.id, file.url);
+            } else {
+              // Local URLs need to be fetched as blobs
+              const response = await axios.get(`${API_URL}${file.url}`, {
+                responseType: 'blob',
+                timeout: 10000
+              });
+              const blob = response.data;
+              const objectUrl = URL.createObjectURL(blob);
+              newFileUrls[file.id] = objectUrl;
+              console.log('Successfully loaded file:', file.id, 'Object URL:', objectUrl);
+            }
           } catch (error) {
             console.error('Failed to load file:', file.id, error);
           }

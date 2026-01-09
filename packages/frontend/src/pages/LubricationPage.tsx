@@ -128,12 +128,17 @@ export default function LubricationPage() {
               // Fetch thumbnail as blob
               try {
                 console.log('Fetching thumbnail for point:', point.id, thumbnailUrl);
-                const blobResponse = await axios.get(`${API_URL}${thumbnailUrl}`, {
-                  responseType: 'blob',
-                  timeout: 10000
-                });
-                const objectUrl = URL.createObjectURL(blobResponse.data);
-                newThumbnailUrls[point.id] = objectUrl;
+                // Cloudinary URLs can be used directly
+                if (thumbnailUrl.startsWith('http')) {
+                  newThumbnailUrls[point.id] = thumbnailUrl;
+                } else {
+                  const blobResponse = await axios.get(`${API_URL}${thumbnailUrl}`, {
+                    responseType: 'blob',
+                    timeout: 10000
+                  });
+                  const objectUrl = URL.createObjectURL(blobResponse.data);
+                  newThumbnailUrls[point.id] = objectUrl;
+                }
                 console.log('Successfully loaded thumbnail for point:', point.id);
               } catch (error) {
                 console.error('Failed to load thumbnail for point:', point.id, error);
@@ -247,13 +252,18 @@ export default function LubricationPage() {
       for (const image of viewImages) {
         if (image.mime_type?.startsWith('image/') && !detailImageUrls[image.id]) {
           try {
-            const response = await axios.get(`${API_URL}${image.url}`, {
-              responseType: 'blob',
-              timeout: 10000,
-            });
-            const blob = response.data;
-            const objectUrl = URL.createObjectURL(blob);
-            newImageUrls[image.id] = objectUrl;
+            // Cloudinary URLs can be used directly
+            if (image.url.startsWith('http')) {
+              newImageUrls[image.id] = image.url;
+            } else {
+              const response = await axios.get(`${API_URL}${image.url}`, {
+                responseType: 'blob',
+                timeout: 10000,
+              });
+              const blob = response.data;
+              const objectUrl = URL.createObjectURL(blob);
+              newImageUrls[image.id] = objectUrl;
+            }
           } catch (error) {
             console.error('Failed to load detail image:', image.id, error);
           }

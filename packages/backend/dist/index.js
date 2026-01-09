@@ -22,6 +22,7 @@ const settings_1 = __importDefault(require("./routes/settings"));
 const topics_1 = __importDefault(require("./routes/topics"));
 const maintenanceProcedures_1 = __importDefault(require("./routes/maintenanceProcedures"));
 const inquiries_1 = __importDefault(require("./routes/inquiries"));
+const line_1 = __importDefault(require("./routes/line"));
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -41,7 +42,14 @@ app.use((req, res, next) => {
 });
 // Health check
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString(), cloudinary: { configured: !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET), hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME, hasApiKey: !!process.env.CLOUDINARY_API_KEY, hasApiSecret: !!process.env.CLOUDINARY_API_SECRET } });
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        line: {
+            hasToken: !!process.env.LINE_CHANNEL_ACCESS_TOKEN,
+            tokenLength: process.env.LINE_CHANNEL_ACCESS_TOKEN?.length || 0
+        }
+    });
 });
 // API Routes
 app.use('/api/auth', auth_1.default);
@@ -55,6 +63,7 @@ app.use('/api/settings', settings_1.default);
 app.use('/api/topics', topics_1.default);
 app.use('/api/maintenance-procedures', maintenanceProcedures_1.default);
 app.use('/api/inquiries', inquiries_1.default);
+app.use('/api/line', line_1.default);
 // 404 handler
 app.use((req, res) => {
     res.status(404).json({

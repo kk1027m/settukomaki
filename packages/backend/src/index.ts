@@ -18,6 +18,7 @@ import settingsRoutes from './routes/settings';
 import topicsRoutes from './routes/topics';
 import maintenanceProceduresRoutes from './routes/maintenanceProcedures';
 import inquiriesRoutes from './routes/inquiries';
+import lineRoutes from './routes/line';
 
 // Load environment variables
 dotenv.config();
@@ -42,7 +43,14 @@ app.use((req, res, next) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), cloudinary: { configured: !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET), hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME, hasApiKey: !!process.env.CLOUDINARY_API_KEY, hasApiSecret: !!process.env.CLOUDINARY_API_SECRET } });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    line: {
+      hasToken: !!process.env.LINE_CHANNEL_ACCESS_TOKEN,
+      tokenLength: process.env.LINE_CHANNEL_ACCESS_TOKEN?.length || 0
+    }
+  });
 });
 
 // API Routes
@@ -57,6 +65,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/topics', topicsRoutes);
 app.use('/api/maintenance-procedures', maintenanceProceduresRoutes);
 app.use('/api/inquiries', inquiriesRoutes);
+app.use('/api/line', lineRoutes);
 
 // 404 handler
 app.use((req, res) => {

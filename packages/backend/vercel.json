@@ -15,9 +15,10 @@
       "dest": "/api/index.js"
     }
   ],
-  "functions": {
-    "api/index.js": {
-      "maxDuration": 60
+  "crons": [
+    {
+      "path": "/api/line/cron?secret=${CRON_SECRET}",
+      "schedule": "0 23 * * *"
     }
-  }
+  ]
 }

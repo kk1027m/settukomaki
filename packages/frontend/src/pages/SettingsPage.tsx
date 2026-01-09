@@ -1,79 +1,95 @@
 import { useEffect, useState } from 'react';
-import { Save } from 'lucide-react';
+import { Send, CheckCircle, XCircle, Users, User, Trash2 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { Input } from '../components/common/Input';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
 
-interface Setting {
-  id: number;
-  key: string;
-  value: string;
-  description: string | null;
-  updated_at: string;
+interface LineRecipient {
+  id: string;
+  displayId: string;
+  type: string;
+  name: string | null;
+}
+
+interface LineStatusData {
+  hasToken: boolean;
+  hasGroupId: boolean;
+  recipientCount: number;
+  recipients: LineRecipient[];
 }
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<Setting[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [lineStatus, setLineStatus] = useState<LineStatusData | null>(null);
+  const [testingLine, setTestingLine] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadSettings();
+    loadLineStatus();
   }, []);
 
-  const loadSettings = async () => {
+  const loadLineStatus = async () => {
     try {
-      const response = await api.get('/settings');
-      const settingsData = response.data.data;
-      setSettings(settingsData);
-
-      // Initialize form data
-      const initialData: Record<string, string> = {};
-      settingsData.forEach((setting: Setting) => {
-        initialData[setting.key] = setting.value;
-      });
-      setFormData(initialData);
+      const response = await api.get('/line/status');
+      setLineStatus(response.data.data);
     } catch (error) {
-      toast.error('設定の読み込みに失敗しました');
+      console.error('Failed to load LINE status');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-
+  const testLineNotification = async () => {
+    setTestingLine(true);
     try {
-      // Prepare settings array for update
-      const settingsToUpdate = Object.entries(formData).map(([key, value]) => ({
-        key,
-        value,
-      }));
-
-      await api.put('/settings', { settings: settingsToUpdate });
-      toast.success('設定を保存しました。スケジューラーが再起動されます。');
-      loadSettings();
+      const response = await api.post('/line/test');
+      if (response.data.success) {
+        toast.success('テスト通知を送信しました！LINEを確認してください');
+      } else {
+        toast.error('送信に失敗しました: ' + response.data.message);
+      }
     } catch (error: any) {
-      toast.error(error.response?.data?.error || '保存に失敗しました');
+      toast.error(error.response?.data?.error || 'LINE通知の送信に失敗しました');
     } finally {
-      setSaving(false);
+      setTestingLine(false);
     }
   };
 
-  const handleChange = (key: string, value: string) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
+  const triggerManualNotification = async () => {
+    setTestingLine(true);
+    try {
+      const response = await api.post('/line/trigger');
+      if (response.data.success) {
+        toast.success('通知を送信しました！');
+      } else {
+        toast.error(response.data.message || '送信対象がありませんでした');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || '通知の送信に失敗しました');
+    } finally {
+      setTestingLine(false);
+    }
+  };
+
+  const deleteRecipient = async (recipientId: string) => {
+    if (!confirm('この送信先を削除しますか？')) return;
+    
+    setDeletingId(recipientId);
+    try {
+      await api.delete('/line/recipients/' + encodeURIComponent(recipientId));
+      toast.success('送信先を削除しました');
+      loadLineStatus();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || '削除に失敗しました');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (loading) {
     return <div className="text-center py-8">読み込み中...</div>;
   }
-
-  // Group settings by category
-  const notificationSettings = settings.filter(s => s.key.startsWith('notification_'));
 
   return (
     <div>
@@ -82,90 +98,73 @@ export default function SettingsPage() {
         <p className="text-gray-600 mt-2">管理者のみが設定を変更できます</p>
       </div>
 
-      <form onSubmit={handleSubmit}>
-        <Card className="mb-6">
-          <h2 className="text-xl font-semibold mb-4">通知スケジュール</h2>
-          <p className="text-sm text-gray-600 mb-4">
-            各チェックを実行する時間を設定してください（24時間形式: HH:MM）
-          </p>
-
-          <div className="space-y-4">
-            {notificationSettings.map(setting => {
-              let label = '';
-              if (setting.key === 'notification_lubrication_time') {
-                label = '給油チェック時刻';
-              } else if (setting.key === 'notification_replacement_time') {
-                label = '部品交換チェック時刻';
-              } else if (setting.key === 'notification_stock_time') {
-                label = '在庫チェック時刻';
-              }
-
-              return (
-                <div key={setting.key}>
-                  <Input
-                    label={label}
-                    type="time"
-                    value={formData[setting.key] || ''}
-                    onChange={(e) => handleChange(setting.key, e.target.value)}
-                    required
-                  />
-                  {setting.description && (
-                    <p className="text-xs text-gray-500 mt-1">{setting.description}</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <h3 className="text-sm font-semibold text-blue-800 mb-2">注意事項</h3>
-              <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
-                <li>時間を変更すると、スケジューラーが自動的に再起動されます</li>
-                <li>変更は即座に反映され、次回の指定時刻から新しいスケジュールで実行されます</li>
-                <li>通知は毎日指定された時刻に自動実行されます</li>
-              </ul>
-            </div>
-
-            <div className="flex justify-end gap-4">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  loadSettings();
-                  toast.success('変更を破棄しました');
-                }}
-              >
-                リセット
-              </Button>
-              <Button type="submit" disabled={saving}>
-                <Save size={20} className="mr-2" />
-                {saving ? '保存中...' : '設定を保存'}
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </form>
-
       <Card>
-        <h2 className="text-xl font-semibold mb-4">現在のスケジュール</h2>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between py-2 border-b">
-            <span className="font-medium">給油チェック:</span>
-            <span className="text-gray-600">毎日 {formData['notification_lubrication_time']}</span>
+        <h2 className="text-xl font-semibold mb-4">LINE通知設定</h2>
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <span className="font-medium w-40">Channel Access Token:</span>
+            {lineStatus?.hasToken ? (
+              <span className="flex items-center text-green-600">
+                <CheckCircle size={16} className="mr-1" /> 設定済み
+              </span>
+            ) : (
+              <span className="flex items-center text-red-600">
+                <XCircle size={16} className="mr-1" /> 未設定
+              </span>
+            )}
           </div>
-          <div className="flex justify-between py-2 border-b">
-            <span className="font-medium">部品交換チェック:</span>
-            <span className="text-gray-600">毎日 {formData['notification_replacement_time']}</span>
+          <div className="flex items-start gap-4">
+            <span className="font-medium w-40">送信先:</span>
+            <div className="flex-1">
+              {lineStatus?.recipientCount && lineStatus.recipientCount > 0 ? (
+                <div className="space-y-2">
+                  <span className="flex items-center text-green-600">
+                    <CheckCircle size={16} className="mr-1" /> {lineStatus.recipientCount}件の送信先
+                  </span>
+                  <div className="space-y-2 mt-2">
+                    {lineStatus.recipients.map((recipient) => (
+                      <div key={recipient.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <div className="flex items-center text-sm text-gray-600">
+                          {recipient.type === 'group' ? (
+                            <Users size={14} className="mr-2" />
+                          ) : (
+                            <User size={14} className="mr-2" />
+                          )}
+                          <span>
+                            {recipient.type === 'group' ? 'グループ' : '個人'}: ...{recipient.displayId}
+                            {recipient.name && ` (${recipient.name})`}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => deleteRecipient(recipient.id)}
+                          disabled={deletingId === recipient.id}
+                          className="text-red-500 hover:text-red-700 p-1 disabled:opacity-50"
+                          title="削除"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <span className="flex items-center text-red-600">
+                  <XCircle size={16} className="mr-1" /> 未設定
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex justify-between py-2 border-b">
-            <span className="font-medium">在庫チェック:</span>
-            <span className="text-gray-600">毎日 {formData['notification_stock_time']}</span>
+          <div className="pt-4 border-t flex gap-4">
+            <Button type="button" onClick={testLineNotification} disabled={testingLine || !lineStatus?.hasToken || !lineStatus?.hasGroupId}>
+              <Send size={16} className="mr-2" />
+              {testingLine ? '送信中...' : 'テスト通知を送信'}
+            </Button>
+            <Button type="button" variant="secondary" onClick={triggerManualNotification} disabled={testingLine || !lineStatus?.hasToken || !lineStatus?.hasGroupId}>
+              {testingLine ? '送信中...' : '今すぐ通知を実行'}
+            </Button>
           </div>
-          <div className="flex justify-between py-2">
-            <span className="font-medium">プッシュ通知送信:</span>
-            <span className="text-gray-600">5分ごと</span>
-          </div>
+          <p className="text-sm text-gray-500 mt-2">※ 平日の朝8時（日本時間）に自動で通知が送信されます</p>
+          <p className="text-sm text-gray-500">※ グループや個人チャットでBotにメッセージを送ると、自動的に送信先として登録されます</p>
         </div>
       </Card>
     </div>
