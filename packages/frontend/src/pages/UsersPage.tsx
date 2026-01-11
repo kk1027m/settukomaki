@@ -12,7 +12,7 @@ interface User {
   id: number;
   username: string;
   email: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'leader' | 'user';
   full_name: string | null;
   is_active: boolean;
   created_at: string;
@@ -28,7 +28,7 @@ export default function UsersPage() {
     username: '',
     email: '',
     password: '',
-    role: 'user' as 'admin' | 'user',
+    role: 'user' as 'admin' | 'leader' | 'user',
     full_name: '',
   });
 
@@ -168,10 +168,12 @@ export default function UsersPage() {
                   <td className="py-3 px-4">
                     <span
                       className={`badge ${
-                        user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                        user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
+                        user.role === 'leader' ? 'bg-green-100 text-green-800' : 
+                        'bg-blue-100 text-blue-800'
                       }`}
                     >
-                      {user.role === 'admin' ? '管理者' : '一般'}
+                      {user.role === 'admin' ? '管理者' : user.role === 'leader' ? 'リーダー' : '一般ユーザー'}
                     </span>
                   </td>
                   <td className="py-3 px-4">
@@ -255,6 +257,7 @@ export default function UsersPage() {
               onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
             >
               <option value="user">一般ユーザー</option>
+              <option value="leader">リーダー</option>
               <option value="admin">管理者</option>
             </select>
           </div>

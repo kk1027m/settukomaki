@@ -28,7 +28,7 @@ interface LubricationPoint {
 }
 
 export default function LubricationPage() {
-  const { isAdmin } = useAuth();
+  const { canEdit } = useAuth();
   const [points, setPoints] = useState<LubricationPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -367,7 +367,7 @@ export default function LubricationPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">給油管理</h1>
-        {isAdmin && (
+        {canEdit && (
           <Button
             onClick={() => {
               resetForm();
@@ -440,7 +440,7 @@ export default function LubricationPage() {
                           <SortableContext items={unitPoints.map(p => p.id)} strategy={verticalListSortingStrategy}>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                               {unitPoints.map((point) => (
-                                <SortableItem key={point.id} id={point.id} disabled={!isAdmin}>
+                                <SortableItem key={point.id} id={point.id} disabled={!canEdit}>
                                   <Card
                                     onClick={() => handleView(point)}
                                     className="cursor-pointer hover:shadow-lg transition-shadow"
@@ -498,7 +498,7 @@ export default function LubricationPage() {
               )}
             </div>
 
-            {isAdmin && (
+            {canEdit && (
               <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                 <Button
                   variant="primary"

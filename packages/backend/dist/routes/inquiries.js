@@ -43,16 +43,23 @@ const router = (0, express_1.Router)();
 router.use(auth_1.authenticate);
 // GET routes - accessible by all authenticated users
 router.get('/', inquiriesController.getInquiries);
+// GET single inquiry with replies
+router.get('/:id', inquiriesController.getInquiryById);
 // POST route - accessible by all authenticated users
 router.post('/', [
     (0, express_validator_1.body)('subject').notEmpty().withMessage('件名は必須です'),
     (0, express_validator_1.body)('message').notEmpty().withMessage('内容は必須です'),
     validateRequest_1.validateRequest,
 ], inquiriesController.createInquiry);
-// PUT route for status - admin only
-router.put('/:id/status', auth_1.requireAdmin, [
+// PUT route for status - leader or admin only
+router.put('/:id/status', auth_1.requireLeaderOrAdmin, [
     (0, express_validator_1.body)('status').isIn(['pending', 'in_progress', 'resolved']).withMessage('無効なステータスです'),
     validateRequest_1.validateRequest,
 ], inquiriesController.updateInquiryStatus);
+// POST route for replies - leader or admin only
+router.post('/:id/replies', auth_1.requireLeaderOrAdmin, [
+    (0, express_validator_1.body)('message').notEmpty().withMessage('返信内容は必須です'),
+    validateRequest_1.validateRequest,
+], inquiriesController.createReply);
 exports.default = router;
 //# sourceMappingURL=inquiries.js.map

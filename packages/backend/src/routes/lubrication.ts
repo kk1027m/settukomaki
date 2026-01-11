@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import * as lubricationController from '../controllers/lubricationController';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requireLeaderOrAdmin } from '../middleware/auth';
 import { validateRequest } from '../middleware/validateRequest';
 
 const router = Router();
@@ -11,12 +11,13 @@ router.use(authenticate);
 
 router.get('/points', lubricationController.getLubricationPoints);
 
-router.put('/points/sort-order', lubricationController.updateLubricationSortOrder);
+router.put('/points/sort-order', requireLeaderOrAdmin, lubricationController.updateLubricationSortOrder);
 
 router.get('/points/:id', lubricationController.getLubricationPointById);
 
 router.post(
   '/points',
+  requireLeaderOrAdmin,
   [
     body('machine_name').notEmpty().withMessage('Machine name is required'),
     body('location').notEmpty().withMessage('Location is required'),
@@ -26,12 +27,13 @@ router.post(
   lubricationController.createLubricationPoint
 );
 
-router.put('/points/:id', lubricationController.updateLubricationPoint);
+router.put('/points/:id', requireLeaderOrAdmin, lubricationController.updateLubricationPoint);
 
-router.delete('/points/:id', lubricationController.deleteLubricationPoint);
+router.delete('/points/:id', requireLeaderOrAdmin, lubricationController.deleteLubricationPoint);
 
 router.post(
   '/points/:id/perform',
+  requireLeaderOrAdmin,
   lubricationController.performLubrication
 );
 

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import * as topicsController from '../controllers/topicsController';
-import { authenticate, requireAdmin } from '../middleware/auth';
+import { authenticate, requireLeaderOrAdmin } from '../middleware/auth';
 import { validateRequest } from '../middleware/validateRequest';
 
 const router = Router();
@@ -13,10 +13,10 @@ router.use(authenticate);
 router.get('/', topicsController.getTopics);
 router.get('/:id', topicsController.getTopic);
 
-// POST, PUT, DELETE routes - admin only
+// POST, PUT, DELETE routes - leader or admin only
 router.post(
   '/',
-  requireAdmin,
+  requireLeaderOrAdmin,
   [
     body('title').notEmpty().withMessage('タイトルは必須です'),
     body('content').notEmpty().withMessage('内容は必須です'),
@@ -27,7 +27,7 @@ router.post(
 
 router.put(
   '/:id',
-  requireAdmin,
+  requireLeaderOrAdmin,
   [
     body('title').notEmpty().withMessage('タイトルは必須です'),
     body('content').notEmpty().withMessage('内容は必須です'),
@@ -36,6 +36,6 @@ router.put(
   topicsController.updateTopic
 );
 
-router.delete('/:id', requireAdmin, topicsController.deleteTopic);
+router.delete('/:id', requireLeaderOrAdmin, topicsController.deleteTopic);
 
 export default router;

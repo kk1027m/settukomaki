@@ -28,7 +28,7 @@ interface Part {
 }
 
 export default function PartsPage() {
-  const { isAdmin } = useAuth();
+  const { canEdit } = useAuth();
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -284,7 +284,7 @@ export default function PartsPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">部品在庫管理</h1>
-        {isAdmin && (
+        {canEdit && (
           <Button
             onClick={() => {
               resetForm();
@@ -365,7 +365,7 @@ export default function PartsPage() {
                       <SortableContext items={partsInGroup.map(p => p.id)} strategy={verticalListSortingStrategy}>
                         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                           {partsInGroup.map((part) => (
-                            <SortableItem key={part.id} id={part.id} disabled={!isAdmin}>
+                            <SortableItem key={part.id} id={part.id} disabled={!canEdit}>
                               <Card
                                 onClick={() => handleView(part)}
                                 className={`cursor-pointer hover:shadow-lg transition-shadow ${part.needs_order ? 'border-2 border-orange-300' : ''}`}
@@ -401,7 +401,7 @@ export default function PartsPage() {
                             </div>
                           </div>
 
-                          {isAdmin && (
+                          {canEdit && (
                             <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                               <Button
                                 variant="primary"

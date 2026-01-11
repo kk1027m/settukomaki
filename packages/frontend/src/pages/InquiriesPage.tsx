@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Mail, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Plus, Mail, CheckCircle, Clock, AlertCircle, Send } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
@@ -7,6 +7,16 @@ import { Input } from '../components/common/Input';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+
+interface Reply {
+  id: number;
+  inquiry_id: number;
+  message: string;
+  created_by_id: number;
+  created_by_username: string;
+  created_by_full_name: string | null;
+  created_at: string;
+}
 
 interface Inquiry {
   id: number;
@@ -18,15 +28,18 @@ interface Inquiry {
   created_by_full_name: string | null;
   created_at: string;
   updated_at: string;
+  replies?: Reply[];
 }
 
 export default function InquiriesPage() {
-  const { isAdmin } = useAuth();
+  const { canEdit } = useAuth();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [viewingInquiry, setViewingInquiry] = useState<Inquiry | null>(null);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [submittingReply, setSubmittingReply] = useState(false);
   const [formData, setFormData] = useState({
     subject: '',
     message: '',
@@ -61,9 +74,52 @@ export default function InquiriesPage() {
     }
   };
 
-  const handleView = (inquiry: Inquiry) => {
-    setViewingInquiry(inquiry);
-    setIsDetailModalOpen(true);
+  const handleView = async (inquiry: Inquiry) => {
+    try {
+      const response = await api.get('/inquiries/' + inquiry.id);
+      setViewingInquiry(response.data.data);
+      setIsDetailModalOpen(true);
+    } catch (error) {
+      toast.error('詳細の読み込みに失敗しました');
+    }
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!viewingInquiry) return;
+
+    try {
+      await api.put('/inquiries/' + viewingInquiry.id + '/status', { status: newStatus });
+      toast.success('ステータスを更新しました');
+      setViewingInquiry({ ...viewingInquiry, status: newStatus as Inquiry['status'] });
+      loadInquiries();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'ステータス更新に失敗しました');
+    }
+  };
+
+  const handleReplySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!viewingInquiry || !replyMessage.trim()) return;
+
+    setSubmittingReply(true);
+    try {
+      const response = await api.post('/inquiries/' + viewingInquiry.id + '/replies', {
+        message: replyMessage,
+      });
+      toast.success('返信を送信しました');
+      setReplyMessage('');
+      const newReply = response.data.data;
+      setViewingInquiry({
+        ...viewingInquiry,
+        status: viewingInquiry.status === 'pending' ? 'in_progress' : viewingInquiry.status,
+        replies: [...(viewingInquiry.replies || []), newReply],
+      });
+      loadInquiries();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || '返信の送信に失敗しました');
+    } finally {
+      setSubmittingReply(false);
+    }
   };
 
   const resetForm = () => {
@@ -82,7 +138,7 @@ export default function InquiriesPage() {
     const badge = badges[status as keyof typeof badges];
     const Icon = badge.icon;
     return (
-      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.className}`}>
+      <span className={"inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm " + badge.className}>
         <Icon size={14} />
         {badge.label}
       </span>
@@ -108,17 +164,15 @@ export default function InquiriesPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">問い合わせ</h1>
-        {!isAdmin && (
-          <Button
-            onClick={() => {
-              resetForm();
-              setIsModalOpen(true);
-            }}
-          >
-            <Plus size={20} className="mr-2" />
-            新規問い合わせ
-          </Button>
-        )}
+        <Button
+          onClick={() => {
+            resetForm();
+            setIsModalOpen(true);
+          }}
+        >
+          <Plus size={20} className="mr-2" />
+          新規問い合わせ
+        </Button>
       </div>
 
       <div className="space-y-4">
@@ -154,7 +208,6 @@ export default function InquiriesPage() {
         )}
       </div>
 
-      {/* Create Inquiry Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => {
@@ -196,19 +249,32 @@ export default function InquiriesPage() {
         </form>
       </Modal>
 
-      {/* Detail View Modal */}
       <Modal
         isOpen={isDetailModalOpen}
         onClose={() => {
           setIsDetailModalOpen(false);
           setViewingInquiry(null);
+          setReplyMessage('');
         }}
         title="問い合わせ詳細"
       >
         {viewingInquiry && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              {getStatusBadge(viewingInquiry.status)}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {getStatusBadge(viewingInquiry.status)}
+              </div>
+              {canEdit && (
+                <select
+                  className="input text-sm py-1 px-2"
+                  value={viewingInquiry.status}
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                >
+                  <option value="pending">未対応</option>
+                  <option value="in_progress">対応中</option>
+                  <option value="resolved">解決済み</option>
+                </select>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">件名</label>
@@ -216,25 +282,62 @@ export default function InquiriesPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">内容</label>
-              <p className="text-gray-900 whitespace-pre-wrap">{viewingInquiry.message}</p>
+              <p className="text-gray-900 whitespace-pre-wrap bg-gray-50 p-3 rounded">{viewingInquiry.message}</p>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">送信者</label>
-              <p className="text-gray-900">
-                {viewingInquiry.created_by_full_name || viewingInquiry.created_by_username}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">作成日時</label>
-              <p className="text-gray-900">{formatDate(viewingInquiry.created_at)}</p>
+            <div className="flex gap-4 text-sm text-gray-600">
+              <span>
+                送信者: {viewingInquiry.created_by_full_name || viewingInquiry.created_by_username}
+              </span>
+              <span>作成日時: {formatDate(viewingInquiry.created_at)}</span>
             </div>
 
-            <div className="flex justify-end">
+            {viewingInquiry.replies && viewingInquiry.replies.length > 0 && (
+              <div className="border-t pt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-3">返信履歴</label>
+                <div className="space-y-3">
+                  {viewingInquiry.replies.map((reply) => (
+                    <div key={reply.id} className="bg-blue-50 p-3 rounded-lg">
+                      <p className="text-gray-900 whitespace-pre-wrap">{reply.message}</p>
+                      <div className="flex gap-2 mt-2 text-xs text-gray-500">
+                        <span>{reply.created_by_full_name || reply.created_by_username}</span>
+                        <span>・</span>
+                        <span>{formatDate(reply.created_at)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {canEdit && (
+              <div className="border-t pt-4">
+                <form onSubmit={handleReplySubmit} className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700">返信を追加</label>
+                  <textarea
+                    className="input"
+                    rows={3}
+                    value={replyMessage}
+                    onChange={(e) => setReplyMessage(e.target.value)}
+                    placeholder="返信内容を入力..."
+                    required
+                  />
+                  <div className="flex justify-end">
+                    <Button type="submit" disabled={submittingReply || !replyMessage.trim()}>
+                      <Send size={16} className="mr-1" />
+                      {submittingReply ? '送信中...' : '返信を送信'}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            <div className="flex justify-end border-t pt-4">
               <Button
                 variant="secondary"
                 onClick={() => {
                   setIsDetailModalOpen(false);
                   setViewingInquiry(null);
+                  setReplyMessage('');
                 }}
               >
                 閉じる

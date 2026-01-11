@@ -29,7 +29,7 @@ interface ReplacementSchedule {
 }
 
 export default function ReplacementPage() {
-  const { isAdmin } = useAuth();
+  const { canEdit } = useAuth();
   const [schedules, setSchedules] = useState<ReplacementSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -371,7 +371,7 @@ export default function ReplacementPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">部品交換管理</h1>
-        {isAdmin && (
+        {canEdit && (
           <Button
             onClick={() => {
               resetForm();
@@ -444,7 +444,7 @@ export default function ReplacementPage() {
                           <SortableContext items={unitSchedules.map(s => s.id)} strategy={verticalListSortingStrategy}>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                               {unitSchedules.map((schedule) => (
-                                <SortableItem key={schedule.id} id={schedule.id} disabled={!isAdmin}>
+                                <SortableItem key={schedule.id} id={schedule.id} disabled={!canEdit}>
                                   <Card
                                     onClick={() => handleView(schedule)}
                                     className="cursor-pointer hover:shadow-lg transition-shadow"
@@ -505,7 +505,7 @@ export default function ReplacementPage() {
               )}
             </div>
 
-            {isAdmin && (
+            {canEdit && (
               <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                 <Button
                   variant="primary"

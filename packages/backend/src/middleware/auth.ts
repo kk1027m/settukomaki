@@ -7,7 +7,7 @@ export interface AuthRequest extends Request {
   user?: {
     id: number;
     username: string;
-    role: 'admin' | 'user';
+    role: 'admin' | 'leader' | 'user';
   };
 }
 
@@ -50,6 +50,17 @@ export const requireAdmin = (
 ) => {
   if (req.user?.role !== 'admin') {
     return next(new AppError('Admin access required', 403));
+  }
+  next();
+};
+
+export const requireLeaderOrAdmin = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  if (req.user?.role !== 'admin' && req.user?.role !== 'leader') {
+    return next(new AppError('Leader or Admin access required', 403));
   }
   next();
 };

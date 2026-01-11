@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import * as inquiriesController from '../controllers/inquiriesController';
-import { authenticate, requireAdmin } from '../middleware/auth';
+import { authenticate, requireLeaderOrAdmin } from '../middleware/auth';
 import { validateRequest } from '../middleware/validateRequest';
 
 const router = Router();
@@ -11,6 +11,9 @@ router.use(authenticate);
 
 // GET routes - accessible by all authenticated users
 router.get('/', inquiriesController.getInquiries);
+
+// GET single inquiry with replies
+router.get('/:id', inquiriesController.getInquiryById);
 
 // POST route - accessible by all authenticated users
 router.post(
@@ -23,15 +26,26 @@ router.post(
   inquiriesController.createInquiry
 );
 
-// PUT route for status - admin only
+// PUT route for status - leader or admin only
 router.put(
   '/:id/status',
-  requireAdmin,
+  requireLeaderOrAdmin,
   [
     body('status').isIn(['pending', 'in_progress', 'resolved']).withMessage('無効なステータスです'),
     validateRequest,
   ],
   inquiriesController.updateInquiryStatus
+);
+
+// POST route for replies - leader or admin only
+router.post(
+  '/:id/replies',
+  requireLeaderOrAdmin,
+  [
+    body('message').notEmpty().withMessage('返信内容は必須です'),
+    validateRequest,
+  ],
+  inquiriesController.createReply
 );
 
 export default router;

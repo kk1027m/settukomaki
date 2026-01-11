@@ -42,17 +42,17 @@ const router = (0, express_1.Router)();
 // All routes require authentication
 router.use(auth_1.authenticate);
 router.get('/points', lubricationController.getLubricationPoints);
-router.put('/points/sort-order', lubricationController.updateLubricationSortOrder);
+router.put('/points/sort-order', auth_1.requireLeaderOrAdmin, lubricationController.updateLubricationSortOrder);
 router.get('/points/:id', lubricationController.getLubricationPointById);
-router.post('/points', [
+router.post('/points', auth_1.requireLeaderOrAdmin, [
     (0, express_validator_1.body)('machine_name').notEmpty().withMessage('Machine name is required'),
     (0, express_validator_1.body)('location').notEmpty().withMessage('Location is required'),
     (0, express_validator_1.body)('cycle_days').isInt({ min: 1 }).withMessage('Cycle days must be a positive integer'),
     validateRequest_1.validateRequest,
 ], lubricationController.createLubricationPoint);
-router.put('/points/:id', lubricationController.updateLubricationPoint);
-router.delete('/points/:id', lubricationController.deleteLubricationPoint);
-router.post('/points/:id/perform', lubricationController.performLubrication);
+router.put('/points/:id', auth_1.requireLeaderOrAdmin, lubricationController.updateLubricationPoint);
+router.delete('/points/:id', auth_1.requireLeaderOrAdmin, lubricationController.deleteLubricationPoint);
+router.post('/points/:id/perform', auth_1.requireLeaderOrAdmin, lubricationController.performLubrication);
 router.get('/points/:id/records', lubricationController.getLubricationRecords);
 router.get('/alerts', lubricationController.getAlerts);
 exports.default = router;

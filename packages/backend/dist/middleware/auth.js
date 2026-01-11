@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requireAdmin = exports.authenticate = void 0;
+exports.requireLeaderOrAdmin = exports.requireAdmin = exports.authenticate = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const auth_1 = require("../config/auth");
 const errorHandler_1 = require("./errorHandler");
@@ -39,4 +39,11 @@ const requireAdmin = (req, res, next) => {
     next();
 };
 exports.requireAdmin = requireAdmin;
+const requireLeaderOrAdmin = (req, res, next) => {
+    if (req.user?.role !== 'admin' && req.user?.role !== 'leader') {
+        return next(new errorHandler_1.AppError('Leader or Admin access required', 403));
+    }
+    next();
+};
+exports.requireLeaderOrAdmin = requireLeaderOrAdmin;
 //# sourceMappingURL=auth.js.map

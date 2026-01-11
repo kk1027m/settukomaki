@@ -44,17 +44,17 @@ router.use(auth_1.authenticate);
 // GET routes - accessible by all authenticated users
 router.get('/', topicsController.getTopics);
 router.get('/:id', topicsController.getTopic);
-// POST, PUT, DELETE routes - admin only
-router.post('/', auth_1.requireAdmin, [
+// POST, PUT, DELETE routes - leader or admin only
+router.post('/', auth_1.requireLeaderOrAdmin, [
     (0, express_validator_1.body)('title').notEmpty().withMessage('タイトルは必須です'),
     (0, express_validator_1.body)('content').notEmpty().withMessage('内容は必須です'),
     validateRequest_1.validateRequest,
 ], topicsController.createTopic);
-router.put('/:id', auth_1.requireAdmin, [
+router.put('/:id', auth_1.requireLeaderOrAdmin, [
     (0, express_validator_1.body)('title').notEmpty().withMessage('タイトルは必須です'),
     (0, express_validator_1.body)('content').notEmpty().withMessage('内容は必須です'),
     validateRequest_1.validateRequest,
 ], topicsController.updateTopic);
-router.delete('/:id', auth_1.requireAdmin, topicsController.deleteTopic);
+router.delete('/:id', auth_1.requireLeaderOrAdmin, topicsController.deleteTopic);
 exports.default = router;
 //# sourceMappingURL=topics.js.map

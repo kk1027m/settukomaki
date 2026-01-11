@@ -44,24 +44,24 @@ router.use(auth_1.authenticate);
 router.get('/', partController.getParts);
 router.get('/low-stock', partController.getLowStockParts);
 router.get('/order-requests', partController.getOrderRequests);
-router.put('/sort-order', partController.updateSortOrder);
+router.put('/sort-order', auth_1.requireLeaderOrAdmin, partController.updateSortOrder);
 router.get('/:id', partController.getPartById);
-router.post('/', [
+router.post('/', auth_1.requireLeaderOrAdmin, [
     (0, express_validator_1.body)('part_name').notEmpty().withMessage('Part name is required'),
     (0, express_validator_1.body)('current_stock').isInt({ min: 0 }).withMessage('Current stock must be a non-negative integer'),
     (0, express_validator_1.body)('min_stock').isInt({ min: 0 }).withMessage('Min stock must be a non-negative integer'),
     (0, express_validator_1.body)('unit').notEmpty().withMessage('Unit is required'),
     validateRequest_1.validateRequest,
 ], partController.createPart);
-router.put('/:id', partController.updatePart);
-router.delete('/:id', partController.deletePart);
-router.post('/:id/adjust', [
+router.put('/:id', auth_1.requireLeaderOrAdmin, partController.updatePart);
+router.delete('/:id', auth_1.requireLeaderOrAdmin, partController.deletePart);
+router.post('/:id/adjust', auth_1.requireLeaderOrAdmin, [
     (0, express_validator_1.body)('action_type').isIn(['入庫', '出庫']).withMessage('Invalid action type'),
     (0, express_validator_1.body)('quantity').isInt({ min: 1 }).withMessage('Quantity must be a positive integer'),
     validateRequest_1.validateRequest,
 ], partController.adjustStock);
 router.get('/:id/history', partController.getPartHistory);
-router.post('/:id/order', [
+router.post('/:id/order', auth_1.requireLeaderOrAdmin, [
     (0, express_validator_1.body)('quantity').isInt({ min: 1 }).withMessage('Quantity must be a positive integer'),
     (0, express_validator_1.body)('urgency').isIn(['normal', 'urgent']).withMessage('Urgency must be normal or urgent'),
     validateRequest_1.validateRequest,

@@ -4,7 +4,6 @@ import { Card } from '../components/common/Card';
 import { AlertTriangle, Droplet, Package, MessageSquare, Mail } from 'lucide-react';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext';
 
 interface Stats {
   urgent_lubrication: number;
@@ -36,7 +35,6 @@ interface Inquiry {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
   const [stats, setStats] = useState<Stats>({
     urgent_lubrication: 0,
     upcoming_lubrication: 0,
@@ -54,10 +52,8 @@ export default function DashboardPage() {
   useEffect(() => {
     loadStats();
     loadRecentTopics();
-    if (isAdmin) {
-      loadRecentInquiries();
-    }
-  }, [isAdmin]);
+    loadRecentInquiries();
+  }, []);
 
   const loadStats = async () => {
     try {
@@ -174,69 +170,67 @@ export default function DashboardPage() {
         )}
       </Card>
 
-      {/* Inquiries Section (Admin Only) */}
-      {isAdmin && (
-        <Card className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Mail size={20} />
-              最近の問い合わせ
-            </h2>
-            <button
-              onClick={() => navigate('/inquiries')}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              すべて見る →
-            </button>
+      {/* Inquiries Section */}
+      <Card className="mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Mail size={20} />
+            最近の問い合わせ
+          </h2>
+          <button
+            onClick={() => navigate('/inquiries')}
+            className="text-sm text-blue-600 hover:text-blue-800"
+          >
+            すべて見る →
+          </button>
+        </div>
+        {inquiriesLoading ? (
+          <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           </div>
-          {inquiriesLoading ? (
-            <div className="text-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            </div>
-          ) : recentInquiries.length > 0 ? (
-            <div className="space-y-3">
-              {recentInquiries.map((inquiry) => (
-                <div
-                  key={inquiry.id}
-                  onClick={() => navigate('/inquiries')}
-                  className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        inquiry.status === 'pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : inquiry.status === 'in_progress'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}
-                    >
-                      {inquiry.status === 'pending'
-                        ? '未対応'
+        ) : recentInquiries.length > 0 ? (
+          <div className="space-y-3">
+            {recentInquiries.map((inquiry) => (
+              <div
+                key={inquiry.id}
+                onClick={() => navigate('/inquiries')}
+                className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                      inquiry.status === 'pending'
+                        ? 'bg-yellow-100 text-yellow-800'
                         : inquiry.status === 'in_progress'
-                        ? '対応中'
-                        : '解決済み'}
-                    </span>
-                    <h3 className="font-semibold text-gray-900 line-clamp-1">
-                      {inquiry.subject}
-                    </h3>
-                  </div>
-                  <p className="text-sm text-gray-600 line-clamp-1 mb-2">
-                    {inquiry.message}
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <span>{inquiry.created_by_full_name || inquiry.created_by_username}</span>
-                    <span>•</span>
-                    <span>{new Date(inquiry.created_at).toLocaleDateString('ja-JP')}</span>
-                  </div>
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-green-100 text-green-800'
+                    }`}
+                  >
+                    {inquiry.status === 'pending'
+                      ? '未対応'
+                      : inquiry.status === 'in_progress'
+                      ? '対応中'
+                      : '解決済み'}
+                  </span>
+                  <h3 className="font-semibold text-gray-900 line-clamp-1">
+                    {inquiry.subject}
+                  </h3>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-600 text-center py-8">問い合わせがありません</p>
-          )}
-        </Card>
-      )}
+                <p className="text-sm text-gray-600 line-clamp-1 mb-2">
+                  {inquiry.message}
+                </p>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <span>{inquiry.created_by_full_name || inquiry.created_by_username}</span>
+                  <span>•</span>
+                  <span>{new Date(inquiry.created_at).toLocaleDateString('ja-JP')}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-600 text-center py-8">問い合わせがありません</p>
+        )}
+      </Card>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <div onClick={() => navigate('/alerts/緊急給油')} className="cursor-pointer transform transition hover:scale-105">

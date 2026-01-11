@@ -20,7 +20,7 @@ interface Topic {
 }
 
 export default function TopicsPage() {
-  const { isAdmin } = useAuth();
+  const { canEdit } = useAuth();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -123,7 +123,7 @@ export default function TopicsPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">トピック・お知らせ</h1>
-        {isAdmin && (
+        {canEdit && (
           <Button
             onClick={() => {
               resetForm();
@@ -172,7 +172,7 @@ export default function TopicsPage() {
                     )}
                   </div>
                 </div>
-                {isAdmin && (
+                {canEdit && (
                   <div className="flex gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="secondary"
