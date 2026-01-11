@@ -10,7 +10,7 @@ const auth_1 = require("../config/auth");
 const errorHandler_1 = require("../middleware/errorHandler");
 const getUsers = async (req, res, next) => {
     try {
-        const result = await (0, connection_1.query)('SELECT id, username, email, role, full_name, is_active, created_at, updated_at FROM users ORDER BY created_at DESC');
+        const result = await (0, connection_1.query)('SELECT id, username, role, full_name, is_active, created_at, updated_at FROM users ORDER BY created_at DESC');
         res.json({
             success: true,
             data: result.rows,
@@ -24,7 +24,7 @@ exports.getUsers = getUsers;
 const getUserById = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const result = await (0, connection_1.query)('SELECT id, username, email, role, full_name, is_active, created_at, updated_at FROM users WHERE id = $1', [id]);
+        const result = await (0, connection_1.query)('SELECT id, username, role, full_name, is_active, created_at, updated_at FROM users WHERE id = $1', [id]);
         if (result.rows.length === 0) {
             throw new errorHandler_1.AppError('User not found', 404);
         }
@@ -40,12 +40,12 @@ const getUserById = async (req, res, next) => {
 exports.getUserById = getUserById;
 const createUser = async (req, res, next) => {
     try {
-        const { username, email, password, role, full_name } = req.body;
+        const { username, password, role, full_name } = req.body;
         // Hash password
         const password_hash = await bcrypt_1.default.hash(password, auth_1.authConfig.bcryptRounds);
         const result = await (0, connection_1.query)(`INSERT INTO users (username, email, password_hash, role, full_name)
        VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, username, email, role, full_name, is_active, created_at`, [username, email, password_hash, role, full_name || null]);
+       RETURNING id, username, role, full_name, is_active, created_at`, [username, username + '@local', password_hash, role, full_name || null]);
         res.status(201).json({
             success: true,
             data: result.rows[0],
@@ -64,14 +64,10 @@ exports.createUser = createUser;
 const updateUser = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { email, role, full_name, is_active, password } = req.body;
+        const { role, full_name, is_active, password } = req.body;
         const updates = [];
         const values = [];
         let paramCount = 1;
-        if (email !== undefined) {
-            updates.push(`email = $${paramCount++}`);
-            values.push(email);
-        }
         if (role !== undefined) {
             updates.push(`role = $${paramCount++}`);
             values.push(role);
@@ -96,7 +92,7 @@ const updateUser = async (req, res, next) => {
         values.push(id);
         const result = await (0, connection_1.query)(`UPDATE users SET ${updates.join(', ')}
        WHERE id = $${paramCount}
-       RETURNING id, username, email, role, full_name, is_active, updated_at`, values);
+       RETURNING id, username, role, full_name, is_active, updated_at`, values);
         if (result.rows.length === 0) {
             throw new errorHandler_1.AppError('User not found', 404);
         }

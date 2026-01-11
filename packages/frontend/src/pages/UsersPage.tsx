@@ -11,7 +11,6 @@ import toast from 'react-hot-toast';
 interface User {
   id: number;
   username: string;
-  email: string;
   role: 'admin' | 'leader' | 'user';
   full_name: string | null;
   is_active: boolean;
@@ -26,7 +25,6 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     username: '',
-    email: '',
     password: '',
     role: 'user' as 'admin' | 'leader' | 'user',
     full_name: '',
@@ -57,7 +55,6 @@ export default function UsersPage() {
     try {
       if (editingUser) {
         const updateData: any = {
-          email: formData.email,
           role: formData.role,
           full_name: formData.full_name,
         };
@@ -99,7 +96,6 @@ export default function UsersPage() {
     setEditingUser(user);
     setFormData({
       username: user.username,
-      email: user.email,
       password: '',
       role: user.role,
       full_name: user.full_name || '',
@@ -111,7 +107,6 @@ export default function UsersPage() {
     setEditingUser(null);
     setFormData({
       username: '',
-      email: '',
       password: '',
       role: 'user',
       full_name: '',
@@ -151,7 +146,6 @@ export default function UsersPage() {
             <thead>
               <tr className="border-b">
                 <th className="text-left py-3 px-4">ユーザー名</th>
-                <th className="text-left py-3 px-4">メールアドレス</th>
                 <th className="text-left py-3 px-4">氏名</th>
                 <th className="text-left py-3 px-4">権限</th>
                 <th className="text-left py-3 px-4">状態</th>
@@ -163,7 +157,6 @@ export default function UsersPage() {
               {users.map((user) => (
                 <tr key={user.id} className="border-b hover:bg-gray-50">
                   <td className="py-3 px-4 font-medium">{user.username}</td>
-                  <td className="py-3 px-4">{user.email}</td>
                   <td className="py-3 px-4">{user.full_name || '-'}</td>
                   <td className="py-3 px-4">
                     <span
@@ -229,13 +222,6 @@ export default function UsersPage() {
             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
             required
             disabled={!!editingUser}
-          />
-          <Input
-            label="メールアドレス"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            required
           />
           <Input
             label={editingUser ? 'パスワード（変更する場合のみ）' : 'パスワード'}

@@ -8,7 +8,7 @@ import { AuthRequest } from '../middleware/auth';
 export const getUsers = async (req: AuthRequest, res: Response, next: any) => {
   try {
     const result = await query(
-      'SELECT id, username, email, role, full_name, is_active, created_at, updated_at FROM users ORDER BY created_at DESC'
+      'SELECT id, username, role, full_name, is_active, created_at, updated_at FROM users ORDER BY created_at DESC'
     );
 
     res.json({
@@ -25,7 +25,7 @@ export const getUserById = async (req: AuthRequest, res: Response, next: any) =>
     const { id } = req.params;
 
     const result = await query(
-      'SELECT id, username, email, role, full_name, is_active, created_at, updated_at FROM users WHERE id = $1',
+      'SELECT id, username, role, full_name, is_active, created_at, updated_at FROM users WHERE id = $1',
       [id]
     );
 
@@ -44,7 +44,7 @@ export const getUserById = async (req: AuthRequest, res: Response, next: any) =>
 
 export const createUser = async (req: AuthRequest, res: Response, next: any) => {
   try {
-    const { username, email, password, role, full_name } = req.body;
+    const { username, password, role, full_name } = req.body;
 
     // Hash password
     const password_hash = await bcrypt.hash(password, authConfig.bcryptRounds);
@@ -52,8 +52,8 @@ export const createUser = async (req: AuthRequest, res: Response, next: any) => 
     const result = await query(
       `INSERT INTO users (username, email, password_hash, role, full_name)
        VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, username, email, role, full_name, is_active, created_at`,
-      [username, email, password_hash, role, full_name || null]
+       RETURNING id, username, role, full_name, is_active, created_at`,
+      [username, username + '@local', password_hash, role, full_name || null]
     );
 
     res.status(201).json({
@@ -72,16 +72,12 @@ export const createUser = async (req: AuthRequest, res: Response, next: any) => 
 export const updateUser = async (req: AuthRequest, res: Response, next: any) => {
   try {
     const { id } = req.params;
-    const { email, role, full_name, is_active, password } = req.body;
+    const { role, full_name, is_active, password } = req.body;
 
     const updates: string[] = [];
     const values: any[] = [];
     let paramCount = 1;
 
-    if (email !== undefined) {
-      updates.push(`email = $${paramCount++}`);
-      values.push(email);
-    }
 
     if (role !== undefined) {
       updates.push(`role = $${paramCount++}`);
@@ -114,7 +110,7 @@ export const updateUser = async (req: AuthRequest, res: Response, next: any) => 
     const result = await query(
       `UPDATE users SET ${updates.join(', ')}
        WHERE id = $${paramCount}
-       RETURNING id, username, email, role, full_name, is_active, updated_at`,
+       RETURNING id, username, role, full_name, is_active, updated_at`,
       values
     );
 
