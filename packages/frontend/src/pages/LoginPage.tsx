@@ -72,11 +72,6 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>初期ユーザー:</p>
-          <p>管理者: admin / admin123</p>
-          <p>一般: user1 / user123</p>
-        </div>
       </div>
     </div>
   );
