@@ -279,7 +279,7 @@ export default function CalendarPage() {
 
       <Card>
         {/* ヘッダー */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center mb-4">
           <div className="flex items-center gap-1">
             <Button variant="secondary" className="px-2 py-1" onClick={handlePrevMonth}>
               <ChevronLeft size={16} />
@@ -291,10 +291,11 @@ export default function CalendarPage() {
               <ChevronRight size={16} />
             </Button>
           </div>
-          <h2 className="text-xl font-bold whitespace-nowrap">
+          <div className="flex-1"></div>
+          <h2 className="text-lg md:text-xl font-bold whitespace-nowrap">
             {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月
           </h2>
-          <div className="w-24 md:w-32"></div>
+          
         </div>
 
         {/* 曜日ヘッダー */}
@@ -326,9 +327,7 @@ export default function CalendarPage() {
               return (
                 <div
                   key={index}
-                  className={`min-h-[80px] md:min-h-[100px] p-1 border rounded cursor-pointer transition-colors ${
-                    day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-                  } ${getDayBgClass(dayColor)} ${
+                  className={`min-h-[60px] md:min-h-[80px] p-1 border rounded cursor-pointer transition-colors ${day.isCurrentMonth ? (dayColor ? '' : 'bg-white') : 'bg-gray-50'} ${getDayBgClass(dayColor)} ${
                     isToday ? 'ring-2 ring-blue-500' : ''
                   } hover:bg-gray-100`}
                   onClick={() => handleDateClick(day.date)}

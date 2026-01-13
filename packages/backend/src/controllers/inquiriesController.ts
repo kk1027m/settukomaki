@@ -126,6 +126,30 @@ export const updateInquiryStatus = async (req: AuthRequest, res: Response, next:
 };
 
 // Create reply (leader or admin only)
+// Delete inquiry (leader or admin only)
+export const deleteInquiry = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { id } = req.params;
+
+    // Delete replies first
+    await query('DELETE FROM inquiry_replies WHERE inquiry_id = $1', [id]);
+
+    // Delete inquiry
+    const result = await query('DELETE FROM inquiries WHERE id = $1 RETURNING *', [id]);
+
+    if (result.rows.length === 0) {
+      throw new AppError('問い合わせが見つかりません', 404);
+    }
+
+    res.json({
+      success: true,
+      message: '問い合わせを削除しました',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createReply = async (req: AuthRequest, res: Response, next: any) => {
   try {
     const { id } = req.params;

@@ -4,5 +4,6 @@ export declare const getInquiries: (req: AuthRequest, res: Response, next: any) 
 export declare const getInquiryById: (req: AuthRequest, res: Response, next: any) => Promise<void>;
 export declare const createInquiry: (req: AuthRequest, res: Response, next: any) => Promise<void>;
 export declare const updateInquiryStatus: (req: AuthRequest, res: Response, next: any) => Promise<void>;
+export declare const deleteInquiry: (req: AuthRequest, res: Response, next: any) => Promise<void>;
 export declare const createReply: (req: AuthRequest, res: Response, next: any) => Promise<void>;
 //# sourceMappingURL=inquiriesController.d.ts.map

@@ -48,4 +48,7 @@ router.post(
   inquiriesController.createReply
 );
 
+// DELETE route - leader or admin only
+router.delete('/:id', requireLeaderOrAdmin, inquiriesController.deleteInquiry);
+
 export default router;

@@ -61,5 +61,7 @@ router.post('/:id/replies', auth_1.requireLeaderOrAdmin, [
     (0, express_validator_1.body)('message').notEmpty().withMessage('返信内容は必須です'),
     validateRequest_1.validateRequest,
 ], inquiriesController.createReply);
+// DELETE route - leader or admin only
+router.delete('/:id', auth_1.requireLeaderOrAdmin, inquiriesController.deleteInquiry);
 exports.default = router;
 //# sourceMappingURL=inquiries.js.map

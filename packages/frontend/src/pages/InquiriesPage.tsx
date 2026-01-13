@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Mail, CheckCircle, Clock, AlertCircle, Send } from 'lucide-react';
+import { Plus, Mail, CheckCircle, Clock, AlertCircle, Send, Trash2 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
@@ -53,7 +53,7 @@ export default function InquiriesPage() {
     try {
       const response = await api.get('/inquiries');
       setInquiries(response.data.data);
-    } catch (error) {
+    } catch (error: any) {
       toast.error('データの読み込みに失敗しました');
     } finally {
       setLoading(false);
@@ -79,7 +79,7 @@ export default function InquiriesPage() {
       const response = await api.get('/inquiries/' + inquiry.id);
       setViewingInquiry(response.data.data);
       setIsDetailModalOpen(true);
-    } catch (error) {
+    } catch (error: any) {
       toast.error('詳細の読み込みに失敗しました');
     }
   };
@@ -119,6 +119,22 @@ export default function InquiriesPage() {
       toast.error(error.response?.data?.error || '返信の送信に失敗しました');
     } finally {
       setSubmittingReply(false);
+    }
+  };
+
+
+  const handleDelete = async () => {
+    if (!viewingInquiry) return;
+    if (!confirm('この問い合わせを削除しますか？')) return;
+
+    try {
+      await api.delete('/inquiries/' + viewingInquiry.id);
+      toast.success('問い合わせを削除しました');
+      setIsDetailModalOpen(false);
+      setViewingInquiry(null);
+      loadInquiries();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || '削除に失敗しました');
     }
   };
 
@@ -331,7 +347,18 @@ export default function InquiriesPage() {
               </div>
             )}
 
-            <div className="flex justify-end border-t pt-4">
+            <div className="flex justify-between border-t pt-4">
+              {canEdit ? (
+                <Button
+                  variant="danger"
+                  onClick={handleDelete}
+                >
+                  <Trash2 size={16} className="mr-1" />
+                  削除
+                </Button>
+              ) : (
+                <div></div>
+              )}
               <Button
                 variant="secondary"
                 onClick={() => {

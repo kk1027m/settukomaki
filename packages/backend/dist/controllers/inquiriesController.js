@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createReply = exports.updateInquiryStatus = exports.createInquiry = exports.getInquiryById = exports.getInquiries = void 0;
+exports.createReply = exports.deleteInquiry = exports.updateInquiryStatus = exports.createInquiry = exports.getInquiryById = exports.getInquiries = void 0;
 const connection_1 = require("../database/connection");
 const errorHandler_1 = require("../middleware/errorHandler");
 // Get all inquiries
@@ -112,6 +112,27 @@ const updateInquiryStatus = async (req, res, next) => {
 };
 exports.updateInquiryStatus = updateInquiryStatus;
 // Create reply (leader or admin only)
+// Delete inquiry (leader or admin only)
+const deleteInquiry = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        // Delete replies first
+        await (0, connection_1.query)('DELETE FROM inquiry_replies WHERE inquiry_id = $1', [id]);
+        // Delete inquiry
+        const result = await (0, connection_1.query)('DELETE FROM inquiries WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length === 0) {
+            throw new errorHandler_1.AppError('問い合わせが見つかりません', 404);
+        }
+        res.json({
+            success: true,
+            message: '問い合わせを削除しました',
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.deleteInquiry = deleteInquiry;
 const createReply = async (req, res, next) => {
     try {
         const { id } = req.params;
