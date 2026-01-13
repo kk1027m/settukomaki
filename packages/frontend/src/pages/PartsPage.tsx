@@ -45,8 +45,8 @@ export default function PartsPage() {
   const [formData, setFormData] = useState({
     part_number: '',
     part_name: '',
-    current_stock: 0,
-    min_stock: 0,
+    current_stock: 1,
+    min_stock: '' as number | '',
     unit: '個',
     unit_name: '',
     location: '',
@@ -137,12 +137,18 @@ export default function PartsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // min_stockが空欄の場合は0として送信
+    const submitData = {
+      ...formData,
+      min_stock: formData.min_stock === '' ? 0 : formData.min_stock,
+    };
+
     try {
       if (editingPart) {
         await api.put(`/parts/${editingPart.id}`, formData);
         toast.success('部品情報を更新しました');
       } else {
-        await api.post('/parts', formData);
+        await api.post('/parts', submitData);
         toast.success('部品を追加しました');
       }
       setIsModalOpen(false);
@@ -220,8 +226,8 @@ export default function PartsPage() {
     setFormData({
       part_number: '',
       part_name: '',
-      current_stock: 0,
-      min_stock: 0,
+      current_stock: 1,
+      min_stock: '' as number | '',
       unit: '個',
       unit_name: '',
       location: '',
@@ -502,8 +508,7 @@ export default function PartsPage() {
               label="発注点"
               type="number"
               value={formData.min_stock}
-              onChange={(e) => setFormData({ ...formData, min_stock: parseInt(e.target.value) })}
-              required
+              onChange={(e) => setFormData({ ...formData, min_stock: e.target.value === '' ? '' : parseInt(e.target.value) })}
             />
           </div>
           <Input

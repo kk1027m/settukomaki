@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Droplet, Wrench, Package, Users, Settings, FileText, Mail, X } from 'lucide-react';
+import { LayoutDashboard, Droplet, Wrench, Package, Users, Settings, FileText, Mail, X, Calendar } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface SidebarProps {
@@ -17,6 +17,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { to: '/parts', icon: Package, label: '部品在庫' },
     { to: '/maintenance-procedures', icon: FileText, label: '作業標準' },
     { to: '/inquiries', icon: Mail, label: '問い合わせ' },
+    { to: '/calendar', icon: Calendar, label: 'カレンダー' },
   ];
 
   // 管理者専用メニュー

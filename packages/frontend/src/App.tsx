@@ -13,6 +13,7 @@ import SettingsPage from './pages/SettingsPage';
 import TopicsPage from './pages/TopicsPage';
 import MaintenanceProceduresPage from './pages/MaintenanceProceduresPage';
 import InquiriesPage from './pages/InquiriesPage';
+import CalendarPage from './pages/CalendarPage';
 import AlertDetailsPage from './pages/AlertDetailsPage';
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
             <Route path="/maintenance-procedures" element={<MaintenanceProceduresPage />} />
             <Route path="/topics" element={<TopicsPage />} />
             <Route path="/inquiries" element={<InquiriesPage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/alerts/:type" element={<AlertDetailsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/users" element={<UsersPage />} />
