@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { query } from '../database/connection';
 import { AuthRequest } from '../middleware/auth';
-import { AppError } from '../utils/errors';
+import { AppError } from '../middleware/errorHandler';
 
 // カレンダーイベント一覧取得
 export const getEvents = async (req: AuthRequest, res: Response, next: any) => {

@@ -88,8 +88,16 @@ const sendLineMessage = async (message) => {
 };
 exports.sendLineMessage = sendLineMessage;
 // Format notification message for LINE
-const formatNotificationMessage = (urgentLubrication, scheduledLubrication, urgentReplacement, scheduledReplacement, lowStockParts) => {
+const formatNotificationMessage = (overdueLubrication, urgentLubrication, scheduledLubrication, overdueReplacement, urgentReplacement, scheduledReplacement, lowStockParts) => {
     const lines = [];
+    if (overdueLubrication.length > 0) {
+        lines.push('‼️ 【期限切れ給油】');
+        overdueLubrication.forEach((item) => {
+            lines.push('  ・' + item.machine_name + ' - ' + item.point_name);
+            lines.push('    期限: ' + formatDate(item.next_date) + '（超過）');
+        });
+        lines.push('');
+    }
     if (urgentLubrication.length > 0) {
         lines.push('\u{1F6A8} 【緊急給油】');
         urgentLubrication.forEach((item) => {
@@ -103,6 +111,14 @@ const formatNotificationMessage = (urgentLubrication, scheduledLubrication, urge
         scheduledLubrication.forEach((item) => {
             lines.push('  ・' + item.machine_name + ' - ' + item.point_name);
             lines.push('    予定日: ' + formatDate(item.next_date));
+        });
+        lines.push('');
+    }
+    if (overdueReplacement.length > 0) {
+        lines.push('‼️ 【期限切れ部品交換】');
+        overdueReplacement.forEach((item) => {
+            lines.push('  ・' + item.machine_name + ' - ' + item.part_name);
+            lines.push('    期限: ' + formatDate(item.next_replacement_date) + '（超過）');
         });
         lines.push('');
     }

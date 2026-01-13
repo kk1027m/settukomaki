@@ -78,7 +78,7 @@ exports.createPart = createPart;
 const updatePart = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { part_number, part_name, min_stock, unit, unit_name, location, shelf_box_name, description, is_active } = req.body;
+        const { part_number, part_name, current_stock, min_stock, unit, unit_name, location, shelf_box_name, description, is_active } = req.body;
         const updates = [];
         const values = [];
         let paramCount = 1;
@@ -89,6 +89,10 @@ const updatePart = async (req, res, next) => {
         if (part_name !== undefined) {
             updates.push(`part_name = $${paramCount++}`);
             values.push(part_name);
+        }
+        if (current_stock !== undefined) {
+            updates.push(`current_stock = $${paramCount++}`);
+            values.push(current_stock);
         }
         if (min_stock !== undefined) {
             updates.push(`min_stock = $${paramCount++}`);

@@ -23,6 +23,7 @@ const topics_1 = __importDefault(require("./routes/topics"));
 const maintenanceProcedures_1 = __importDefault(require("./routes/maintenanceProcedures"));
 const inquiries_1 = __importDefault(require("./routes/inquiries"));
 const line_1 = __importDefault(require("./routes/line"));
+const calendar_1 = __importDefault(require("./routes/calendar"));
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -64,6 +65,7 @@ app.use('/api/topics', topics_1.default);
 app.use('/api/maintenance-procedures', maintenanceProcedures_1.default);
 app.use('/api/inquiries', inquiries_1.default);
 app.use('/api/line', line_1.default);
+app.use('/api/calendar', calendar_1.default);
 // 404 handler
 app.use((req, res) => {
     res.status(404).json({
