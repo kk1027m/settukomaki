@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -62,6 +62,10 @@ export default function CalendarPage() {
     color: 'blue',
   });
   const [selectedDayColor, setSelectedDayColor] = useState('');
+
+  // 長押し検出用
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressTriggered = useRef(false);
 
   useEffect(() => {
     loadData();
@@ -161,6 +165,10 @@ export default function CalendarPage() {
 
   const handleDateClick = (date: Date) => {
     if (!canEdit) return;
+    if (longPressTriggered.current) {
+      longPressTriggered.current = false;
+      return;
+    }
     const dateStr = formatDateString(date);
     setSelectedDate(dateStr);
     setEventFormData({
@@ -182,7 +190,25 @@ export default function CalendarPage() {
     setIsDayColorModalOpen(true);
   };
 
-  const handleEditEvent = (event: CalendarEvent, e: React.MouseEvent) => {
+  // タッチ開始（長押し検出用）
+  const handleTouchStart = (date: Date) => {
+    if (!canEdit) return;
+    longPressTriggered.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      handleDateLongPress(date);
+    }, 500);
+  };
+
+  // タッチ終了
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleEditEvent = (event: CalendarEvent, e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
     if (!canEdit) return;
     setEditingEvent(event);
@@ -195,7 +221,7 @@ export default function CalendarPage() {
     setIsEventModalOpen(true);
   };
 
-  const handleDeleteEvent = async (event: CalendarEvent, e: React.MouseEvent) => {
+  const handleDeleteEvent = async (event: CalendarEvent, e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
     if (!canEdit) return;
     if (!confirm('この予定を削除しますか？')) return;
@@ -265,10 +291,10 @@ export default function CalendarPage() {
               <ChevronRight size={20} />
             </Button>
           </div>
-          <h2 className="text-xl font-bold">
-            {currentDate.getFullYear()}年 {currentDate.getMonth() + 1}月
+          <h2 className="text-xl font-bold whitespace-nowrap">
+            {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月
           </h2>
-          <div className="w-32"></div>
+          <div className="w-24 md:w-32"></div>
         </div>
 
         {/* 曜日ヘッダー */}
@@ -300,7 +326,7 @@ export default function CalendarPage() {
               return (
                 <div
                   key={index}
-                  className={`min-h-[100px] p-1 border rounded cursor-pointer transition-colors ${
+                  className={`min-h-[80px] md:min-h-[100px] p-1 border rounded cursor-pointer transition-colors ${
                     day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                   } ${getDayBgClass(dayColor)} ${
                     isToday ? 'ring-2 ring-blue-500' : ''
@@ -310,6 +336,9 @@ export default function CalendarPage() {
                     e.preventDefault();
                     handleDateLongPress(day.date);
                   }}
+                  onTouchStart={() => handleTouchStart(day.date)}
+                  onTouchEnd={handleTouchEnd}
+                  onTouchMove={handleTouchEnd}
                 >
                   <div
                     className={`text-sm font-medium mb-1 ${
@@ -360,9 +389,9 @@ export default function CalendarPage() {
           <div className="mt-4 p-3 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-600 mb-2">操作方法:</p>
             <ul className="text-sm text-gray-600 space-y-1">
-              <li>・日付をクリック: 予定を追加</li>
-              <li>・予定をクリック: 予定を編集</li>
-              <li>・日付を右クリック: 日付の背景色を設定</li>
+              <li>・日付をタップ: 予定を追加</li>
+              <li>・予定をタップ: 予定を編集</li>
+              <li>・日付を長押し: 日付の背景色を設定</li>
             </ul>
           </div>
         )}
