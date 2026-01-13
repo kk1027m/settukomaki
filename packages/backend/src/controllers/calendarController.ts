@@ -9,7 +9,7 @@ export const getEvents = async (req: AuthRequest, res: Response, next: any) => {
     const { year, month } = req.query;
 
     let sql = `
-      SELECT e.*, u.name as created_by_name
+      SELECT e.*, u.full_name as created_by_name
       FROM calendar_events e
       LEFT JOIN users u ON e.created_by = u.id
       WHERE 1=1
