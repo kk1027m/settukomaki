@@ -62,6 +62,9 @@ export default function CalendarPage() {
     color: 'blue',
   });
   const [selectedDayColor, setSelectedDayColor] = useState('');
+  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [bulkStartDate, setBulkStartDate] = useState('');
+  const [bulkEndDate, setBulkEndDate] = useState('');
 
   // 長押し検出用
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
@@ -185,8 +188,11 @@ export default function CalendarPage() {
     if (!canEdit) return;
     const dateStr = formatDateString(date);
     setSelectedDate(dateStr);
+    setBulkStartDate(dateStr);
+    setBulkEndDate(dateStr);
     const currentColor = getDayColorForDate(dateStr);
     setSelectedDayColor(currentColor);
+    setIsBulkMode(false);
     setIsDayColorModalOpen(true);
   };
 
@@ -255,11 +261,36 @@ export default function CalendarPage() {
 
   const handleDayColorSubmit = async () => {
     try {
-      await api.post('/calendar/day-colors', {
-        date: selectedDate,
-        color: selectedDayColor || null,
-      });
-      toast.success('日付の色を設定しました');
+      if (isBulkMode && bulkStartDate && bulkEndDate) {
+        // Bulk update
+        const start = new Date(bulkStartDate);
+        const end = new Date(bulkEndDate);
+        if (start > end) {
+          toast.error('開始日は終了日より前に設定してください');
+          return;
+        }
+        const dates: string[] = [];
+        const current = new Date(start);
+        while (current <= end) {
+          dates.push(formatDateString(current));
+          current.setDate(current.getDate() + 1);
+        }
+        await Promise.all(
+          dates.map(date => 
+            api.post('/calendar/day-colors', {
+              date,
+              color: selectedDayColor || null,
+            })
+          )
+        );
+        toast.success(`${dates.length}日分の色を設定しました`);
+      } else {
+        await api.post('/calendar/day-colors', {
+          date: selectedDate,
+          color: selectedDayColor || null,
+        });
+        toast.success('日付の色を設定しました');
+      }
       setIsDayColorModalOpen(false);
       loadData();
     } catch (error: any) {
@@ -458,9 +489,40 @@ export default function CalendarPage() {
         title="日付の背景色を設定"
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            選択した日付: {selectedDate}
-          </p>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={isBulkMode}
+                onChange={(e) => setIsBulkMode(e.target.checked)}
+                className="mr-2"
+              />
+              まとめて設定
+            </label>
+          </div>
+          
+          {isBulkMode ? (
+            <div className="flex gap-2 items-center">
+              <input
+                type="date"
+                value={bulkStartDate}
+                onChange={(e) => setBulkStartDate(e.target.value)}
+                className="input text-sm"
+              />
+              <span className="text-gray-500">〜</span>
+              <input
+                type="date"
+                value={bulkEndDate}
+                onChange={(e) => setBulkEndDate(e.target.value)}
+                className="input text-sm"
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">
+              選択した日付: {selectedDate}
+            </p>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">背景色</label>
             <div className="flex flex-wrap gap-2">
