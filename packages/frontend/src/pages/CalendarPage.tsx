@@ -280,15 +280,15 @@ export default function CalendarPage() {
       <Card>
         {/* ヘッダー */}
         <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={handlePrevMonth}>
-              <ChevronLeft size={20} />
+          <div className="flex items-center gap-1">
+            <Button variant="secondary" className="px-2 py-1" onClick={handlePrevMonth}>
+              <ChevronLeft size={16} />
             </Button>
-            <Button variant="secondary" onClick={handleToday}>
+            <Button variant="secondary" className="px-2 py-1 text-xs" onClick={handleToday}>
               今日
             </Button>
-            <Button variant="secondary" onClick={handleNextMonth}>
-              <ChevronRight size={20} />
+            <Button variant="secondary" className="px-2 py-1" onClick={handleNextMonth}>
+              <ChevronRight size={16} />
             </Button>
           </div>
           <h2 className="text-xl font-bold whitespace-nowrap">
