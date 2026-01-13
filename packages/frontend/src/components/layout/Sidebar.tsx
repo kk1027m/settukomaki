@@ -16,8 +16,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { to: '/replacements', icon: Wrench, label: '部品交換管理' },
     { to: '/parts', icon: Package, label: '部品在庫' },
     { to: '/maintenance-procedures', icon: FileText, label: '作業標準' },
-    { to: '/inquiries', icon: Mail, label: '問い合わせ' },
     { to: '/calendar', icon: Calendar, label: 'カレンダー' },
+    { to: '/inquiries', icon: Mail, label: '問い合わせ' },
   ];
 
   // 管理者専用メニュー
