@@ -104,8 +104,19 @@ const checkAndSendNotifications = async () => {
   const sevenDaysFromNow = new Date(today);
   sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
 
+  // Overdue lubrication (past due date)
+  const overdueLubricationResult = await query(
+    `SELECT DISTINCT ON (lp.id)
+       lp.id, lp.machine_name, lp.location as point_name, lr.next_due_date as next_date
+     FROM lubrication_points lp
+     JOIN lubrication_records lr ON lr.point_id = lp.id
+     WHERE lp.is_active = true
+       AND lr.next_due_date < $1
+     ORDER BY lp.id, lr.performed_at DESC`,
+    [today.toISOString().split('T')[0]]
+  );
+
   // Urgent lubrication (within 3 days)
-  // Get the latest record per lubrication point
   const urgentLubricationResult = await query(
     `SELECT DISTINCT ON (lp.id)
        lp.id, lp.machine_name, lp.location as point_name, lr.next_due_date as next_date
@@ -129,6 +140,18 @@ const checkAndSendNotifications = async () => {
        AND lr.next_due_date <= $2
      ORDER BY lp.id, lr.performed_at DESC`,
     [threeDaysFromNow.toISOString().split('T')[0], sevenDaysFromNow.toISOString().split('T')[0]]
+  );
+
+  // Overdue replacement (past due date)
+  const overdueReplacementResult = await query(
+    `SELECT DISTINCT ON (rs.id)
+       rs.id, rs.machine_name, rs.part_name, rr.next_due_date as next_replacement_date
+     FROM replacement_schedules rs
+     JOIN replacement_records rr ON rr.schedule_id = rs.id
+     WHERE rs.is_active = true
+       AND rr.next_due_date < $1
+     ORDER BY rs.id, rr.replaced_at DESC`,
+    [today.toISOString().split('T')[0]]
   );
 
   // Urgent replacement (within 3 days)
@@ -166,8 +189,10 @@ const checkAndSendNotifications = async () => {
   );
 
   const message = formatNotificationMessage(
+    overdueLubricationResult.rows,
     urgentLubricationResult.rows,
     scheduledLubricationResult.rows,
+    overdueReplacementResult.rows,
     urgentReplacementResult.rows,
     scheduledReplacementResult.rows,
     lowStockResult.rows
@@ -184,8 +209,10 @@ const checkAndSendNotifications = async () => {
     success: sent,
     message: sent ? 'Notification sent' : 'Failed to send notification',
     counts: {
+      overdueLubrication: overdueLubricationResult.rows.length,
       urgentLubrication: urgentLubricationResult.rows.length,
       scheduledLubrication: scheduledLubricationResult.rows.length,
+      overdueReplacement: overdueReplacementResult.rows.length,
       urgentReplacement: urgentReplacementResult.rows.length,
       scheduledReplacement: scheduledReplacementResult.rows.length,
       lowStock: lowStockResult.rows.length,
