@@ -411,7 +411,7 @@ export default function CalendarPage() {
                   {/* A/B班ボタン（左枠外） */}
                   <button
                     onClick={(e) => toggleWeekShift(sundayDateStr, e)}
-                    className={`w-5 h-5 text-[10px] font-bold rounded flex-shrink-0 self-start mt-1 ${
+                    className={`w-5 h-5 text-[10px] font-bold rounded flex-shrink-0 self-center ${
                       getWeekShift(sundayDateStr) === 'A'
                         ? 'bg-blue-500 text-white'
                         : 'bg-orange-500 text-white'
