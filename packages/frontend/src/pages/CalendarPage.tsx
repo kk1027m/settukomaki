@@ -355,13 +355,13 @@ export default function CalendarPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">カレンダー</h1>
+      <div className="flex justify-between items-center mb-2">
+        <h1 className="text-2xl font-bold">カレンダー</h1>
       </div>
 
-      <Card>
+      <Card className="!p-2">
         {/* ヘッダー */}
-        <div className="flex items-center mb-4">
+        <div className="flex items-center mb-2">
           <div className="flex items-center gap-1">
             <Button variant="secondary" className="px-2 py-1" onClick={handlePrevMonth}>
               <ChevronLeft size={16} />
@@ -374,20 +374,19 @@ export default function CalendarPage() {
             </Button>
           </div>
           <div className="flex-1"></div>
-          <h2 className="text-lg md:text-xl font-bold whitespace-nowrap">
+          <h2 className="text-lg font-bold whitespace-nowrap">
             {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月
           </h2>
-
         </div>
 
         {/* 曜日ヘッダー */}
-        <div className="flex gap-1 mb-1">
+        <div className="flex mb-0.5">
           <div className="w-5 flex-shrink-0"></div>
-          <div className="flex-1 grid grid-cols-7 gap-1">
+          <div className="flex-1 grid grid-cols-7">
             {weekDays.map((day, index) => (
               <div
                 key={day}
-                className={`text-center py-2 font-medium text-sm ${
+                className={`text-center py-1 font-medium text-sm ${
                   index === 0 ? 'text-red-600' : index === 6 ? 'text-blue-600' : 'text-gray-700'
                 }`}
               >
@@ -401,14 +400,14 @@ export default function CalendarPage() {
         {loading ? (
           <div className="text-center py-8">読み込み中...</div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {/* 週ごとにレンダリング */}
             {[0, 1, 2, 3, 4, 5].map((weekIndex) => {
               const weekDays = days.slice(weekIndex * 7, (weekIndex + 1) * 7);
               const sundayDateStr = formatDateString(weekDays[0].date);
 
               return (
-                <div key={weekIndex} className="flex gap-1">
+                <div key={weekIndex} className="flex">
                   {/* A/B班ボタン（左枠外） */}
                   <button
                     onClick={(e) => toggleWeekShift(sundayDateStr, e)}
@@ -422,7 +421,7 @@ export default function CalendarPage() {
                   </button>
 
                   {/* 7日分のグリッド */}
-                  <div className="flex-1 grid grid-cols-7 gap-1">
+                  <div className="flex-1 grid grid-cols-7 gap-px">
                     {weekDays.map((day, dayIndex) => {
                       const dateStr = formatDateString(day.date);
                       const dayEvents = getEventsForDate(dateStr);
@@ -433,7 +432,7 @@ export default function CalendarPage() {
                       return (
                         <div
                           key={dayIndex}
-                          className={`min-h-[60px] md:min-h-[80px] p-1 border rounded cursor-pointer transition-colors ${day.isCurrentMonth ? (dayColor ? '' : 'bg-white') : 'bg-gray-50'} ${getDayBgClass(dayColor)} ${
+                          className={`min-h-[70px] md:min-h-[90px] p-1 border border-gray-200 cursor-pointer transition-colors ${day.isCurrentMonth ? (dayColor ? '' : 'bg-white') : 'bg-gray-50'} ${getDayBgClass(dayColor)} ${
                             isToday ? 'ring-2 ring-blue-500' : ''
                           } hover:bg-gray-100`}
                           onClick={() => handleDateClick(day.date)}
