@@ -61,7 +61,6 @@ export default function PartsPage() {
     action_type: '入庫' as '入庫' | '出庫' | '発注済',
     quantity: 1,
     notes: '',
-    reduce_ordered: false,
   });
   const [orderData, setOrderData] = useState({
     quantity: 1,
@@ -179,7 +178,7 @@ export default function PartsPage() {
       await api.post(`/parts/${selectedPart.id}/adjust`, adjustData);
       toast.success('在庫を調整しました');
       setIsAdjustModalOpen(false);
-      setAdjustData({ action_type: '入庫', quantity: 1, notes: '', reduce_ordered: false });
+      setAdjustData({ action_type: '入庫', quantity: 1, notes: '' });
       loadParts();
     } catch (error: any) {
       toast.error(error.response?.data?.error || '在庫調整に失敗しました');
@@ -582,24 +581,22 @@ export default function PartsPage() {
             onChange={(e) => setFormData({ ...formData, current_stock: parseInt(e.target.value) || 0 })}
             required
           />
-          {editingPart && (
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="発注依頼"
-                type="number"
-                min="0"
-                value={formData.order_request_quantity}
-                onChange={(e) => setFormData({ ...formData, order_request_quantity: parseInt(e.target.value) || 0 })}
-              />
-              <Input
-                label="発注済"
-                type="number"
-                min="0"
-                value={formData.ordered_quantity}
-                onChange={(e) => setFormData({ ...formData, ordered_quantity: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-          )}
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="発注依頼"
+              type="number"
+              min="0"
+              value={formData.order_request_quantity}
+              onChange={(e) => setFormData({ ...formData, order_request_quantity: parseInt(e.target.value) || 0 })}
+            />
+            <Input
+              label="発注済"
+              type="number"
+              min="0"
+              value={formData.ordered_quantity}
+              onChange={(e) => setFormData({ ...formData, ordered_quantity: parseInt(e.target.value) || 0 })}
+            />
+          </div>
           <Input
             label="単位"
             value={formData.unit}
@@ -669,17 +666,13 @@ export default function PartsPage() {
             required
           />
           {adjustData.action_type === '入庫' && selectedPart && ((selectedPart.ordered_quantity || 0) > 0) && (
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="reduce_ordered"
-                checked={adjustData.reduce_ordered}
-                onChange={(e) => setAdjustData({ ...adjustData, reduce_ordered: e.target.checked })}
-                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="reduce_ordered" className="text-sm text-gray-700">
-                発注数から引く（発注中: {selectedPart.ordered_quantity}{selectedPart.unit}）
-              </label>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                発注済: <span className="font-bold">{selectedPart.ordered_quantity}</span> {selectedPart.unit}
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                ※入庫時、発注済から自動的に減算されます
+              </p>
             </div>
           )}
           {adjustData.action_type === '発注済' && selectedPart && (

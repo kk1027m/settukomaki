@@ -8,6 +8,13 @@ const createNotificationTopic = async (title, content, userId, entityType, entit
     try {
         await (0, connection_1.query)(`INSERT INTO topics (title, content, posted_by, related_entity_type, related_entity_id)
        VALUES ($1, $2, $3, $4, $5)`, [title, content, userId, entityType || null, entityId || null]);
+        // 20件を超える古いトピックを削除
+        await (0, connection_1.query)(`
+      DELETE FROM topics
+      WHERE id NOT IN (
+        SELECT id FROM topics ORDER BY created_at DESC LIMIT 20
+      )
+    `);
     }
     catch (error) {
         console.error('Failed to create notification topic:', error);

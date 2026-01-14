@@ -17,6 +17,14 @@ export const createNotificationTopic = async (
        VALUES ($1, $2, $3, $4, $5)`,
       [title, content, userId, entityType || null, entityId || null]
     );
+
+    // 20件を超える古いトピックを削除
+    await query(`
+      DELETE FROM topics
+      WHERE id NOT IN (
+        SELECT id FROM topics ORDER BY created_at DESC LIMIT 20
+      )
+    `);
   } catch (error) {
     console.error('Failed to create notification topic:', error);
   }

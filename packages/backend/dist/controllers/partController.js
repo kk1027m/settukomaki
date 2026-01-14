@@ -53,10 +53,10 @@ const getPartById = async (req, res, next) => {
 exports.getPartById = getPartById;
 const createPart = async (req, res, next) => {
     try {
-        const { part_number, part_name, current_stock, min_stock, unit, unit_name, location, shelf_box_name, description } = req.body;
-        const result = await (0, connection_1.query)(`INSERT INTO parts (part_number, part_name, current_stock, min_stock, unit, unit_name, location, shelf_box_name, description, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING *`, [part_number || null, part_name, current_stock, min_stock, unit, unit_name || null, location || null, shelf_box_name || null, description || null, req.user?.id]);
+        const { part_number, part_name, current_stock, min_stock, unit, unit_name, location, shelf_box_name, description, order_request_quantity, ordered_quantity } = req.body;
+        const result = await (0, connection_1.query)(`INSERT INTO parts (part_number, part_name, current_stock, min_stock, unit, unit_name, location, shelf_box_name, description, created_by, order_request_quantity, ordered_quantity)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       RETURNING *`, [part_number || null, part_name, current_stock, min_stock, unit, unit_name || null, location || null, shelf_box_name || null, description || null, req.user?.id, order_request_quantity || 0, ordered_quantity || 0]);
         // Create notification topic
         const partData = result.rows[0];
         await (0, topicsController_1.createNotificationTopic)('部品が追加されました', `${part_name}${part_number ? ' (' + part_number + ')' : ''} が在庫に追加されました。`, req.user?.id || 1, 'part', partData.id);
@@ -187,11 +187,13 @@ const adjustStock = async (req, res, next) => {
         let historyActionType = action_type;
         // Calculate new stock and min_stock adjustment
         let min_stock_after = part.min_stock;
+        let ordered_quantity_reduction = 0;
         if (action_type === '入庫') {
             stock_after = stock_before + quantity;
-            // 発注点が1以上の場合、入庫数分を減らす（0未満にはならない）
-            if (part.min_stock >= 1) {
-                min_stock_after = Math.max(0, part.min_stock - quantity);
+            // 発注済が1以上の場合、入庫数分を減らす（0未満にはならない）
+            if (ordered_quantity_after >= 1) {
+                ordered_quantity_reduction = Math.min(ordered_quantity_after, quantity);
+                ordered_quantity_after = ordered_quantity_after - ordered_quantity_reduction;
             }
         }
         else if (action_type === '出庫') {
@@ -212,12 +214,16 @@ const adjustStock = async (req, res, next) => {
             // 在庫は変わらない
             stock_after = stock_before;
         }
-        // Update part stock and min_stock
+        // Update part stock and ordered_quantity
         if (action_type === '発注済') {
             await (0, connection_1.query)('UPDATE parts SET order_request_quantity = order_request_quantity - $1, ordered_quantity = ordered_quantity + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [quantity, id]);
         }
+        else if (action_type === '入庫' && ordered_quantity_reduction > 0) {
+            // 入庫時、発注済から減算する
+            await (0, connection_1.query)('UPDATE parts SET current_stock = $1, ordered_quantity = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3', [stock_after, ordered_quantity_after, id]);
+        }
         else {
-            await (0, connection_1.query)('UPDATE parts SET current_stock = $1, min_stock = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3', [stock_after, min_stock_after, id]);
+            await (0, connection_1.query)('UPDATE parts SET current_stock = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [stock_after, id]);
         }
         // Insert history record
         const historyResult = await (0, connection_1.query)(`INSERT INTO part_history (part_id, action_type, quantity, stock_before, stock_after, performed_by, notes)
