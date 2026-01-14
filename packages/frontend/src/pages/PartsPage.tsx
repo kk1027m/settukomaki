@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Edit, Trash2, TrendingUp, FileText, ChevronDown, ChevronRight } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -30,6 +31,7 @@ interface Part {
 
 export default function PartsPage() {
   const { canEdit } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -115,6 +117,20 @@ export default function PartsPage() {
   useEffect(() => {
     loadParts();
   }, []);
+
+  // URLパラメータから部品IDを取得して詳細モーダルを開く
+  useEffect(() => {
+    const partId = searchParams.get('partId');
+    if (partId && parts.length > 0) {
+      const part = parts.find(p => p.id === parseInt(partId));
+      if (part) {
+        setViewingPart(part);
+        setIsDetailModalOpen(true);
+        // パラメータをクリア
+        setSearchParams({});
+      }
+    }
+  }, [parts, searchParams, setSearchParams]);
 
   // プルトゥリフレッシュのイベントリスナー
   useEffect(() => {
@@ -318,7 +334,7 @@ export default function PartsPage() {
       {(orderRequestCount > 0 || orderedCount > 0) && (
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div
-            onClick={() => setSelectedUnit('__order_request__')}
+            onClick={() => setSelectedUnit(selectedUnit === '__order_request__' ? 'all' : '__order_request__')}
             className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${
               selectedUnit === '__order_request__'
                 ? 'border-orange-500 bg-orange-50'
@@ -336,7 +352,7 @@ export default function PartsPage() {
             </div>
           </div>
           <div
-            onClick={() => setSelectedUnit('__ordered__')}
+            onClick={() => setSelectedUnit(selectedUnit === '__ordered__' ? 'all' : '__ordered__')}
             className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${
               selectedUnit === '__ordered__'
                 ? 'border-blue-500 bg-blue-50'

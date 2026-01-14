@@ -75,21 +75,23 @@ export default function AlertDetailsPage() {
     }
   };
 
-  const getNavigationPath = () => {
+  const getNavigationPath = (item?: any) => {
     if (type === '緊急給油' || type === '給油予定') return '/lubrication';
     if (type === '緊急部品交換' || type === '部品交換予定') return '/replacements';
+    // 発注依頼の場合は部品IDを渡す
+    if (item?.id) return `/parts?partId=${item.id}`;
     return '/parts';
   };
 
-  const handleItemClick = () => {
-    navigate(getNavigationPath());
+  const handleItemClick = (item?: any) => {
+    navigate(getNavigationPath(item));
   };
 
   const renderItem = (item: any) => {
     // 給油アラート
     if (type === '緊急給油' || type === '給油予定') {
       return (
-        <Card key={item.id} className="mb-3 hover:shadow-lg transition cursor-pointer" onClick={handleItemClick}>
+        <Card key={item.id} className="mb-3 hover:shadow-lg transition cursor-pointer" onClick={() => handleItemClick()}>
           <div className="p-4">
             <h3 className="font-semibold mb-2">{item.machine_name}</h3>
             {item.unit_name && <p className="text-sm text-gray-600">ユニット: {item.unit_name}</p>}
@@ -107,7 +109,7 @@ export default function AlertDetailsPage() {
     // 部品交換アラート
     if (type === '緊急部品交換' || type === '部品交換予定') {
       return (
-        <Card key={item.id} className="mb-3 hover:shadow-lg transition cursor-pointer" onClick={handleItemClick}>
+        <Card key={item.id} className="mb-3 hover:shadow-lg transition cursor-pointer" onClick={() => handleItemClick()}>
           <div className="p-4">
             <h3 className="font-semibold mb-2">{item.machine_name}</h3>
             {item.unit_name && <p className="text-sm text-gray-600">ユニット: {item.unit_name}</p>}
@@ -125,7 +127,7 @@ export default function AlertDetailsPage() {
 
     // 発注依頼
     return (
-      <Card key={item.id} className="mb-3 hover:shadow-lg transition cursor-pointer" onClick={handleItemClick}>
+      <Card key={item.id} className="mb-3 hover:shadow-lg transition cursor-pointer" onClick={() => handleItemClick(item)}>
         <div className="p-4">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold">{item.part_name}</h3>
