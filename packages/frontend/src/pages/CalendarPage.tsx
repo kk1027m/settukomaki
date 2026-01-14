@@ -381,120 +381,128 @@ export default function CalendarPage() {
         </div>
 
         {/* 曜日ヘッダー */}
-        <div className="grid grid-cols-7 gap-1 mb-1">
-          {weekDays.map((day, index) => (
-            <div
-              key={day}
-              className={`text-center py-2 font-medium text-sm ${
-                index === 0 ? 'text-red-600' : index === 6 ? 'text-blue-600' : 'text-gray-700'
-              }`}
-            >
-              {index === 0 ? (
-                <span className="flex items-center justify-center gap-1">
-                  <span className="w-4 text-[10px] text-gray-400">班</span>
-                  <span>{day}</span>
-                </span>
-              ) : day}
-            </div>
-          ))}
+        <div className="flex gap-1 mb-1">
+          <div className="w-5 flex-shrink-0"></div>
+          <div className="flex-1 grid grid-cols-7 gap-1">
+            {weekDays.map((day, index) => (
+              <div
+                key={day}
+                className={`text-center py-2 font-medium text-sm ${
+                  index === 0 ? 'text-red-600' : index === 6 ? 'text-blue-600' : 'text-gray-700'
+                }`}
+              >
+                {day}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* カレンダーグリッド */}
         {loading ? (
           <div className="text-center py-8">読み込み中...</div>
         ) : (
-          <div className="grid grid-cols-7 gap-1">
-            {days.map((day, index) => {
-              const dateStr = formatDateString(day.date);
-              const dayEvents = getEventsForDate(dateStr);
-              const dayColor = getDayColorForDate(dateStr);
-              const dayOfWeek = day.date.getDay();
-              const isToday = dateStr === today;
+          <div className="space-y-1">
+            {/* 週ごとにレンダリング */}
+            {[0, 1, 2, 3, 4, 5].map((weekIndex) => {
+              const weekDays = days.slice(weekIndex * 7, (weekIndex + 1) * 7);
+              const sundayDateStr = formatDateString(weekDays[0].date);
 
               return (
-                <div
-                  key={index}
-                  className={`min-h-[60px] md:min-h-[80px] p-1 border rounded cursor-pointer transition-colors ${day.isCurrentMonth ? (dayColor ? '' : 'bg-white') : 'bg-gray-50'} ${getDayBgClass(dayColor)} ${
-                    isToday ? 'ring-2 ring-blue-500' : ''
-                  } hover:bg-gray-100`}
-                  onClick={() => handleDateClick(day.date)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    handleDateLongPress(day.date);
-                  }}
-                  onTouchStart={() => handleTouchStart(day.date)}
-                  onTouchEnd={handleTouchEnd}
-                  onTouchMove={handleTouchEnd}
-                >
-                  <div className="flex items-center mb-1">
-                    {/* 日曜日の左側にA/B班ボタン */}
-                    {dayOfWeek === 0 && (
-                      <button
-                        onClick={(e) => toggleWeekShift(dateStr, e)}
-                        className={`w-4 h-4 text-[10px] font-bold rounded mr-1 flex-shrink-0 ${
-                          getWeekShift(dateStr) === 'A'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-orange-500 text-white'
-                        }`}
-                      >
-                        {getWeekShift(dateStr)}
-                      </button>
-                    )}
-                    <div
-                      className={`text-sm font-medium ${
-                        !day.isCurrentMonth
-                          ? 'text-gray-400'
-                          : dayOfWeek === 0
-                          ? 'text-red-600'
-                          : dayOfWeek === 6
-                          ? 'text-blue-600'
-                          : 'text-gray-900'
-                      } ${isToday ? 'bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''}`}
-                    >
-                      {day.date.getDate()}
-                    </div>
-                  </div>
-                  {/* スマホ: ドット表示 / PC: タイトル表示 */}
-                  <div className="space-y-1">
-                    {/* スマホ用: ドット表示 */}
-                    <div className="md:hidden">
-                      {dayEvents.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {dayEvents.slice(0, 4).map((event) => {
-                            const colorClasses = getColorClasses(event.color);
-                            return (
-                              <div
-                                key={event.id}
-                                className={`w-2 h-2 rounded-full ${colorClasses.dot}`}
-                              />
-                            );
-                          })}
-                          {dayEvents.length > 4 && (
-                            <span className="text-xs text-gray-500">+{dayEvents.length - 4}</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {/* PC用: タイトル表示 */}
-                    <div className="hidden md:block">
-                      {dayEvents.slice(0, 3).map((event) => {
-                        const colorClasses = getColorClasses(event.color);
-                        return (
+                <div key={weekIndex} className="flex gap-1">
+                  {/* A/B班ボタン（左枠外） */}
+                  <button
+                    onClick={(e) => toggleWeekShift(sundayDateStr, e)}
+                    className={`w-5 h-5 text-[10px] font-bold rounded flex-shrink-0 self-start mt-1 ${
+                      getWeekShift(sundayDateStr) === 'A'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-orange-500 text-white'
+                    }`}
+                  >
+                    {getWeekShift(sundayDateStr)}
+                  </button>
+
+                  {/* 7日分のグリッド */}
+                  <div className="flex-1 grid grid-cols-7 gap-1">
+                    {weekDays.map((day, dayIndex) => {
+                      const dateStr = formatDateString(day.date);
+                      const dayEvents = getEventsForDate(dateStr);
+                      const dayColor = getDayColorForDate(dateStr);
+                      const dayOfWeek = day.date.getDay();
+                      const isToday = dateStr === today;
+
+                      return (
+                        <div
+                          key={dayIndex}
+                          className={`min-h-[60px] md:min-h-[80px] p-1 border rounded cursor-pointer transition-colors ${day.isCurrentMonth ? (dayColor ? '' : 'bg-white') : 'bg-gray-50'} ${getDayBgClass(dayColor)} ${
+                            isToday ? 'ring-2 ring-blue-500' : ''
+                          } hover:bg-gray-100`}
+                          onClick={() => handleDateClick(day.date)}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            handleDateLongPress(day.date);
+                          }}
+                          onTouchStart={() => handleTouchStart(day.date)}
+                          onTouchEnd={handleTouchEnd}
+                          onTouchMove={handleTouchEnd}
+                        >
                           <div
-                            key={event.id}
-                            className={`text-xs p-1 rounded truncate ${colorClasses.bg} ${colorClasses.text} ${colorClasses.border} border mb-1`}
+                            className={`text-sm font-medium mb-1 ${
+                              !day.isCurrentMonth
+                                ? 'text-gray-400'
+                                : dayOfWeek === 0
+                                ? 'text-red-600'
+                                : dayOfWeek === 6
+                                ? 'text-blue-600'
+                                : 'text-gray-900'
+                            } ${isToday ? 'bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''}`}
                           >
-                            {event.start_time && (
-                              <span className="font-medium">{formatTime(event.start_time)} </span>
-                            )}
-                            <span className="truncate">{event.title}</span>
+                            {day.date.getDate()}
                           </div>
-                        );
-                      })}
-                      {dayEvents.length > 3 && (
-                        <div className="text-xs text-gray-500">+{dayEvents.length - 3}件</div>
-                      )}
-                    </div>
+                          {/* スマホ: ドット表示 / PC: タイトル表示 */}
+                          <div className="space-y-1">
+                            {/* スマホ用: ドット表示 */}
+                            <div className="md:hidden">
+                              {dayEvents.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {dayEvents.slice(0, 4).map((event) => {
+                                    const colorClasses = getColorClasses(event.color);
+                                    return (
+                                      <div
+                                        key={event.id}
+                                        className={`w-2 h-2 rounded-full ${colorClasses.dot}`}
+                                      />
+                                    );
+                                  })}
+                                  {dayEvents.length > 4 && (
+                                    <span className="text-xs text-gray-500">+{dayEvents.length - 4}</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            {/* PC用: タイトル表示 */}
+                            <div className="hidden md:block">
+                              {dayEvents.slice(0, 3).map((event) => {
+                                const colorClasses = getColorClasses(event.color);
+                                return (
+                                  <div
+                                    key={event.id}
+                                    className={`text-xs p-1 rounded truncate ${colorClasses.bg} ${colorClasses.text} ${colorClasses.border} border mb-1`}
+                                  >
+                                    {event.start_time && (
+                                      <span className="font-medium">{formatTime(event.start_time)} </span>
+                                    )}
+                                    <span className="truncate">{event.title}</span>
+                                  </div>
+                                );
+                              })}
+                              {dayEvents.length > 3 && (
+                                <div className="text-xs text-gray-500">+{dayEvents.length - 3}件</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
