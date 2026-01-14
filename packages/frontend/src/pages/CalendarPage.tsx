@@ -187,19 +187,12 @@ export default function CalendarPage() {
     return DAY_COLORS.find((c) => c.value === color)?.bg || '';
   };
 
-  // 週の日曜日の日付を取得
-  const getSundayOfWeek = (date: Date) => {
-    const d = new Date(date);
-    d.setDate(d.getDate() - d.getDay());
-    return formatDateString(d);
-  };
-
   // A/B班を切り替え
   const toggleWeekShift = (sundayDate: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const current = weekShifts[sundayDate] || 'A';
-    const next = current === 'A' ? 'B' : 'A';
-    const newShifts = { ...weekShifts, [sundayDate]: next };
+    const next: 'A' | 'B' = current === 'A' ? 'B' : 'A';
+    const newShifts: Record<string, 'A' | 'B'> = { ...weekShifts, [sundayDate]: next };
     setWeekShifts(newShifts);
     localStorage.setItem('calendarWeekShifts', JSON.stringify(newShifts));
   };
