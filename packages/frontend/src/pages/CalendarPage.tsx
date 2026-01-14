@@ -76,6 +76,12 @@ export default function CalendarPage() {
   const [bulkStartDate, setBulkStartDate] = useState('');
   const [bulkEndDate, setBulkEndDate] = useState('');
 
+  // A/B班設定（週ごと、キーは週の日曜日の日付）
+  const [weekShifts, setWeekShifts] = useState<Record<string, 'A' | 'B'>>(() => {
+    const saved = localStorage.getItem('calendarWeekShifts');
+    return saved ? JSON.parse(saved) : {};
+  });
+
   // 長押し検出用
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const longPressTriggered = useRef(false);
@@ -179,6 +185,28 @@ export default function CalendarPage() {
 
   const getDayBgClass = (color: string) => {
     return DAY_COLORS.find((c) => c.value === color)?.bg || '';
+  };
+
+  // 週の日曜日の日付を取得
+  const getSundayOfWeek = (date: Date) => {
+    const d = new Date(date);
+    d.setDate(d.getDate() - d.getDay());
+    return formatDateString(d);
+  };
+
+  // A/B班を切り替え
+  const toggleWeekShift = (sundayDate: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const current = weekShifts[sundayDate] || 'A';
+    const next = current === 'A' ? 'B' : 'A';
+    const newShifts = { ...weekShifts, [sundayDate]: next };
+    setWeekShifts(newShifts);
+    localStorage.setItem('calendarWeekShifts', JSON.stringify(newShifts));
+  };
+
+  // 週のシフトを取得
+  const getWeekShift = (sundayDate: string) => {
+    return weekShifts[sundayDate] || 'A';
   };
 
   // 日付クリック → 予定一覧モーダルを表示
@@ -368,7 +396,12 @@ export default function CalendarPage() {
                 index === 0 ? 'text-red-600' : index === 6 ? 'text-blue-600' : 'text-gray-700'
               }`}
             >
-              {day}
+              {index === 0 ? (
+                <span className="flex items-center justify-center gap-1">
+                  <span className="w-4 text-[10px] text-gray-400">班</span>
+                  <span>{day}</span>
+                </span>
+              ) : day}
             </div>
           ))}
         </div>
@@ -400,18 +433,33 @@ export default function CalendarPage() {
                   onTouchEnd={handleTouchEnd}
                   onTouchMove={handleTouchEnd}
                 >
-                  <div
-                    className={`text-sm font-medium mb-1 ${
-                      !day.isCurrentMonth
-                        ? 'text-gray-400'
-                        : dayOfWeek === 0
-                        ? 'text-red-600'
-                        : dayOfWeek === 6
-                        ? 'text-blue-600'
-                        : 'text-gray-900'
-                    } ${isToday ? 'bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''}`}
-                  >
-                    {day.date.getDate()}
+                  <div className="flex items-center mb-1">
+                    {/* 日曜日の左側にA/B班ボタン */}
+                    {dayOfWeek === 0 && (
+                      <button
+                        onClick={(e) => toggleWeekShift(dateStr, e)}
+                        className={`w-4 h-4 text-[10px] font-bold rounded mr-1 flex-shrink-0 ${
+                          getWeekShift(dateStr) === 'A'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-orange-500 text-white'
+                        }`}
+                      >
+                        {getWeekShift(dateStr)}
+                      </button>
+                    )}
+                    <div
+                      className={`text-sm font-medium ${
+                        !day.isCurrentMonth
+                          ? 'text-gray-400'
+                          : dayOfWeek === 0
+                          ? 'text-red-600'
+                          : dayOfWeek === 6
+                          ? 'text-blue-600'
+                          : 'text-gray-900'
+                      } ${isToday ? 'bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''}`}
+                    >
+                      {day.date.getDate()}
+                    </div>
                   </div>
                   {/* スマホ: ドット表示 / PC: タイトル表示 */}
                   <div className="space-y-1">

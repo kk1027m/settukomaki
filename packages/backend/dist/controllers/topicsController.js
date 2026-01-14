@@ -24,6 +24,13 @@ exports.createNotificationTopic = createNotificationTopic;
 // Get all topics (accessible by all authenticated users)
 const getTopics = async (req, res, next) => {
     try {
+        // 20件を超える古いトピックを削除してから取得
+        await (0, connection_1.query)(`
+      DELETE FROM topics
+      WHERE id NOT IN (
+        SELECT id FROM topics ORDER BY created_at DESC LIMIT 20
+      )
+    `);
         const result = await (0, connection_1.query)(`
       SELECT
         t.*,
@@ -32,6 +39,7 @@ const getTopics = async (req, res, next) => {
       FROM topics t
       LEFT JOIN users u ON t.posted_by = u.id
       ORDER BY t.created_at DESC
+      LIMIT 20
     `);
         res.json({
             success: true,
@@ -79,6 +87,13 @@ const createTopic = async (req, res, next) => {
         const result = await (0, connection_1.query)(`INSERT INTO topics (title, content, posted_by)
        VALUES ($1, $2, $3)
        RETURNING *`, [title, content, req.user?.id]);
+        // 20件を超える古いトピックを削除
+        await (0, connection_1.query)(`
+      DELETE FROM topics
+      WHERE id NOT IN (
+        SELECT id FROM topics ORDER BY created_at DESC LIMIT 20
+      )
+    `);
         res.status(201).json({
             success: true,
             data: result.rows[0],
