@@ -378,10 +378,11 @@ export default function MaintenanceProceduresPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold">作業標準</h1>
         {isAdmin && (
           <Button
+            className="shrink-0"
             onClick={() => {
               resetForm();
               setIsModalOpen(true);
@@ -578,12 +579,14 @@ export default function MaintenanceProceduresPage() {
                 {isAdmin && (
                   <div className="flex gap-2 ml-4 mt-8" onClick={(e) => e.stopPropagation()}>
                     <Button
+            className="shrink-0"
                       variant="secondary"
                       onClick={() => handleEdit(procedure)}
                     >
                       <Edit size={16} />
                     </Button>
                     <Button
+            className="shrink-0"
                       variant="danger"
                       onClick={() => handleDelete(procedure.id)}
                     >
@@ -696,6 +699,7 @@ export default function MaintenanceProceduresPage() {
 
           <div className="flex gap-2 justify-end">
             <Button
+            className="shrink-0"
               type="button"
               variant="secondary"
               onClick={() => {
@@ -834,6 +838,7 @@ export default function MaintenanceProceduresPage() {
                 />
                 <div className="mt-2 flex justify-end">
                   <Button
+            className="shrink-0"
                     onClick={handleCommentSubmit}
                     disabled={!commentText.trim()}
                   >
@@ -885,6 +890,7 @@ export default function MaintenanceProceduresPage() {
             {/* Close button */}
             <div className="flex justify-end pt-4 border-t">
               <Button
+            className="shrink-0"
                 variant="secondary"
                 onClick={() => {
                   setIsDetailModalOpen(false);
