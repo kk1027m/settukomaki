@@ -46,7 +46,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default function MaintenanceProceduresPage() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, canEdit, user } = useAuth();
   const [procedures, setProcedures] = useState<MaintenanceProcedure[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -380,7 +380,7 @@ export default function MaintenanceProceduresPage() {
     <div>
       <div className="flex justify-between items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold">作業標準</h1>
-        {isAdmin && (
+        {canEdit && (
           <Button
             className="shrink-0"
             onClick={() => {
@@ -550,7 +550,7 @@ export default function MaintenanceProceduresPage() {
                                 <SortableContext items={unitProcedures.map(p => p.id)} strategy={verticalListSortingStrategy}>
                                   <div className="space-y-4">
                                     {unitProcedures.map((procedure) => (
-                                      <SortableItem key={procedure.id} id={procedure.id} disabled={!isAdmin}>
+                                      <SortableItem key={procedure.id} id={procedure.id} disabled={!canEdit}>
             <Card
               key={procedure.id}
               className="hover:shadow-lg transition-shadow cursor-pointer"
@@ -576,7 +576,7 @@ export default function MaintenanceProceduresPage() {
 
                   </div>
                 </div>
-                {isAdmin && (
+                {canEdit && (
                   <div className="flex gap-2 ml-4 mt-8" onClick={(e) => e.stopPropagation()}>
                     <Button
             className="shrink-0"
