@@ -331,7 +331,6 @@ export default function CalendarPage() {
   const days = getDaysInMonth();
   const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
   const today = formatDateString(new Date());
-  const selectedDayEvents = getEventsForDate(selectedDate);
 
   return (
     <div>
@@ -480,61 +479,66 @@ export default function CalendarPage() {
         onClose={() => setIsDayEventsModalOpen(false)}
         title={`${formatDateDisplay(selectedDate)}の予定`}
       >
-        <div className="space-y-4">
-          {selectedDayEvents.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">予定はありません</p>
-          ) : (
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-              {selectedDayEvents.map((event) => {
-                const colorClasses = getColorClasses(event.color);
-                return (
-                  <div
-                    key={event.id}
-                    className={`p-3 rounded-lg border ${colorClasses.bg} ${colorClasses.border} ${canEdit ? 'cursor-pointer hover:opacity-80' : ''}`}
-                    onClick={() => canEdit && handleEditEvent(event)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          {event.start_time && (
-                            <span className={`text-sm font-medium ${colorClasses.text} flex items-center gap-1`}>
-                              <Clock size={14} />
-                              {formatTime(event.start_time)}
-                            </span>
+        {(() => {
+          const dayEvents = getEventsForDate(selectedDate);
+          return (
+            <div className="space-y-4">
+              {dayEvents.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">予定はありません</p>
+              ) : (
+                <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                  {dayEvents.map((event) => {
+                    const colorClasses = getColorClasses(event.color);
+                    return (
+                      <div
+                        key={event.id}
+                        className={`p-3 rounded-lg border ${colorClasses.bg} ${colorClasses.border} ${canEdit ? 'cursor-pointer hover:opacity-80' : ''}`}
+                        onClick={() => canEdit && handleEditEvent(event)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              {event.start_time && (
+                                <span className={`text-sm font-medium ${colorClasses.text} flex items-center gap-1`}>
+                                  <Clock size={14} />
+                                  {formatTime(event.start_time)}
+                                </span>
+                              )}
+                              <span className={`font-medium ${colorClasses.text}`}>{event.title}</span>
+                            </div>
+                            {event.description && (
+                              <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{event.description}</p>
+                            )}
+                            <p className="text-xs text-gray-400 mt-1">作成者: {event.created_by_name}</p>
+                          </div>
+                          {canEdit && (
+                            <button
+                              className="p-1 hover:bg-white rounded ml-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteEvent(event);
+                              }}
+                            >
+                              <X size={16} className="text-red-500" />
+                            </button>
                           )}
-                          <span className={`font-medium ${colorClasses.text}`}>{event.title}</span>
                         </div>
-                        {event.description && (
-                          <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{event.description}</p>
-                        )}
-                        <p className="text-xs text-gray-400 mt-1">作成者: {event.created_by_name}</p>
                       </div>
-                      {canEdit && (
-                        <button
-                          className="p-1 hover:bg-white rounded ml-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteEvent(event);
-                          }}
-                        >
-                          <X size={16} className="text-red-500" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              )}
+              {canEdit && (
+                <div className="pt-2 border-t">
+                  <Button onClick={handleAddEvent} className="w-full flex items-center justify-center gap-2">
+                    <Plus size={16} />
+                    予定を追加
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
-          {canEdit && (
-            <div className="pt-2 border-t">
-              <Button onClick={handleAddEvent} className="w-full flex items-center justify-center gap-2">
-                <Plus size={16} />
-                予定を追加
-              </Button>
-            </div>
-          )}
-        </div>
+          );
+        })()}
       </Modal>
 
       {/* イベント追加/編集モーダル */}
