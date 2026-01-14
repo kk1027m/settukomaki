@@ -180,11 +180,11 @@ const checkAndSendNotifications = async () => {
     [threeDaysFromNow.toISOString().split('T')[0], sevenDaysFromNow.toISOString().split('T')[0]]
   );
 
-  // Low stock parts
+  // 発注依頼がある部品
   const lowStockResult = await query(
-    `SELECT part_name, current_stock as quantity, min_stock as minimum_quantity
+    `SELECT part_name, order_request_quantity as quantity, current_stock as minimum_quantity
      FROM parts
-     WHERE is_active = true AND current_stock < min_stock
+     WHERE is_active = true AND order_request_quantity > 0
      ORDER BY part_name ASC`
   );
 

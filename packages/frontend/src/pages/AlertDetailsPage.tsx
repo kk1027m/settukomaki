@@ -6,7 +6,7 @@ import { Button } from '../components/common/Button';
 import { ChevronLeft, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-type AlertType = '緊急給油' | '給油予定' | '緊急部品交換' | '部品交換予定' | '在庫不足・発注依頼';
+type AlertType = '緊急給油' | '給油予定' | '緊急部品交換' | '部品交換予定' | '在庫不足・発注依頼' | '発注依頼';
 
 export default function AlertDetailsPage() {
   const { type } = useParams<{ type: AlertType }>();
@@ -59,15 +59,12 @@ export default function AlertDetailsPage() {
           break;
         }
 
-        case '在庫不足・発注依頼': {
-          const [partsRes, ordersRes] = await Promise.all([
-            api.get('/parts/low-stock'),
-            api.get('/parts/order-requests'),
-          ]);
-          // 在庫不足と発注依頼を結合
+        case '在庫不足・発注依頼':
+        case '発注依頼': {
+          // 発注依頼がある部品を取得
+          const partsRes = await api.get('/parts/low-stock');
           const lowStock = partsRes.data.data.map((p: any) => ({ ...p, type: 'low_stock' }));
-          const orders = ordersRes.data.data.map((o: any) => ({ ...o, type: 'order' }));
-          setItems([...lowStock, ...orders]);
+          setItems(lowStock);
           break;
         }
       }
@@ -126,40 +123,17 @@ export default function AlertDetailsPage() {
       );
     }
 
-    // 在庫不足・発注依頼
-    if (item.type === 'low_stock') {
-      return (
-        <Card key={item.id} className="mb-3 hover:shadow-lg transition cursor-pointer" onClick={handleItemClick}>
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">{item.part_name}</h3>
-              <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded">在庫不足</span>
-            </div>
-            <p className="text-sm text-gray-600">部品番号: {item.part_number}</p>
-            <p className="text-sm text-gray-600">現在在庫: {item.current_stock} {item.unit}</p>
-            <p className="text-sm text-gray-600">最小在庫: {item.min_stock} {item.unit}</p>
-            <div className="mt-2 flex items-center text-blue-600 text-sm">
-              <span>詳細を見る</span>
-              <ExternalLink size={14} className="ml-1" />
-            </div>
-          </div>
-        </Card>
-      );
-    }
-
     // 発注依頼
     return (
       <Card key={item.id} className="mb-3 hover:shadow-lg transition cursor-pointer" onClick={handleItemClick}>
         <div className="p-4">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold">{item.part_name}</h3>
-            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">発注依頼</span>
+            <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded">発注依頼</span>
           </div>
-          <p className="text-sm text-gray-600">部品番号: {item.part_number}</p>
-          <p className="text-sm text-gray-600">依頼数量: {item.quantity} {item.unit}</p>
-          <p className="text-sm text-gray-600">依頼者: {item.requested_by_full_name || item.requested_by_username}</p>
-          <p className="text-sm text-gray-600">依頼日: {new Date(item.created_at).toLocaleDateString('ja-JP')}</p>
-          {item.notes && <p className="text-sm text-gray-600 mt-1">備考: {item.notes}</p>}
+          {item.part_number && <p className="text-sm text-gray-600">部品番号: {item.part_number}</p>}
+          <p className="text-sm text-gray-600">発注依頼: {item.order_request_quantity} {item.unit}</p>
+          <p className="text-sm text-gray-600">現在庫: {item.current_stock} {item.unit}</p>
           <div className="mt-2 flex items-center text-blue-600 text-sm">
             <span>詳細を見る</span>
             <ExternalLink size={14} className="ml-1" />

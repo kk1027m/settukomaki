@@ -139,14 +139,15 @@ async function checkLubricationDueDates() {
 }
 async function checkLowStock() {
     try {
+        // 発注依頼がある部品をチェック
         const result = await (0, connection_1.query)(`
-      SELECT id, part_name, current_stock, min_stock, unit
+      SELECT id, part_name, current_stock, order_request_quantity, unit
       FROM parts
-      WHERE is_active = true AND current_stock < min_stock
+      WHERE is_active = true AND order_request_quantity > 0
     `);
         for (const part of result.rows) {
-            const title = `在庫不足: ${part.part_name}`;
-            const message = `現在庫: ${part.current_stock}${part.unit}、発注点: ${part.min_stock}${part.unit}。発注を検討してください。`;
+            const title = `発注依頼: ${part.part_name}`;
+            const message = `発注依頼: ${part.order_request_quantity}${part.unit}、現在庫: ${part.current_stock}${part.unit}。`;
             // Check if notification already exists for today
             const existingNotif = await (0, connection_1.query)(`SELECT id FROM notifications
          WHERE type = 'low_stock' AND entity_type = 'part' AND entity_id = $1
@@ -154,12 +155,12 @@ async function checkLowStock() {
             if (existingNotif.rows.length === 0) {
                 await (0, connection_1.query)(`INSERT INTO notifications (type, title, message, entity_type, entity_id)
            VALUES ('low_stock', $1, $2, 'part', $3)`, [title, message, part.id]);
-                logger_1.logger.info(`Created notification for low stock part ${part.id}`);
+                logger_1.logger.info(`Created notification for order request part ${part.id}`);
             }
         }
     }
     catch (error) {
-        logger_1.logger.error('Error checking low stock:', error);
+        logger_1.logger.error('Error checking order requests:', error);
     }
 }
 async function checkReplacementDueDates() {

@@ -281,14 +281,14 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        <div onClick={() => navigate('/alerts/在庫不足・発注依頼')} className="cursor-pointer transform transition hover:scale-105">
+        <div onClick={() => navigate('/alerts/発注依頼')} className="cursor-pointer transform transition hover:scale-105">
           <Card>
             <div className="flex flex-col items-center justify-center py-4">
               <div className="p-3 bg-orange-100 rounded-full mb-2">
                 <Package className="text-orange-600" size={24} />
               </div>
-              <p className="text-xs text-gray-600 mb-1">在庫不足・発注依頼</p>
-              <p className="text-2xl font-bold text-orange-600">{stats.low_stock_parts + stats.order_requests}</p>
+              <p className="text-xs text-gray-600 mb-1">発注依頼</p>
+              <p className="text-2xl font-bold text-orange-600">{stats.low_stock_parts}</p>
             </div>
           </Card>
         </div>

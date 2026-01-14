@@ -187,10 +187,10 @@ export const formatNotificationMessage = (
   }
 
   if (lowStockParts.length > 0) {
-    lines.push('\u{26A0}\u{FE0F} 【在庫不足・発注依頼】');
+    lines.push('\u{26A0}\u{FE0F} 【発注依頼】');
     lowStockParts.forEach((item) => {
       lines.push('  ・' + item.part_name);
-      lines.push('    現在庫: ' + item.quantity + ' / 最小: ' + item.minimum_quantity);
+      lines.push('    発注依頼: ' + item.quantity + ' / 現在庫: ' + item.minimum_quantity);
     });
     lines.push('');
   }

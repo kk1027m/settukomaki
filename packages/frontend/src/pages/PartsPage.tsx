@@ -293,6 +293,10 @@ export default function PartsPage() {
     return acc;
   }, {} as Record<string, Record<string, Part[]>>);
 
+  // カウント計算
+  const orderRequestCount = parts.filter(p => (p.order_request_quantity || 0) > 0).length;
+  const orderedCount = parts.filter(p => (p.ordered_quantity || 0) > 0).length;
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -309,6 +313,48 @@ export default function PartsPage() {
           </Button>
         )}
       </div>
+
+      {/* Stats Cards */}
+      {(orderRequestCount > 0 || orderedCount > 0) && (
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div
+            onClick={() => setSelectedUnit('__order_request__')}
+            className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${
+              selectedUnit === '__order_request__'
+                ? 'border-orange-500 bg-orange-50'
+                : 'border-orange-200 bg-white hover:border-orange-300'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-orange-600 font-medium">発注依頼あり</p>
+                <p className="text-2xl font-bold text-orange-700">{orderRequestCount} 件</p>
+              </div>
+              <div className="p-2 bg-orange-100 rounded-full">
+                <FileText className="text-orange-600" size={24} />
+              </div>
+            </div>
+          </div>
+          <div
+            onClick={() => setSelectedUnit('__ordered__')}
+            className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${
+              selectedUnit === '__ordered__'
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-blue-200 bg-white hover:border-blue-300'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-blue-600 font-medium">発注済あり</p>
+                <p className="text-2xl font-bold text-blue-700">{orderedCount} 件</p>
+              </div>
+              <div className="p-2 bg-blue-100 rounded-full">
+                <TrendingUp className="text-blue-600" size={24} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">

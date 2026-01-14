@@ -388,13 +388,13 @@ export const orderRequest = async (req: AuthRequest, res: Response, next: any) =
 
 export const getLowStockParts = async (req: AuthRequest, res: Response, next: any) => {
   try {
+    // 発注依頼がある部品を取得
     const result = await query(`
       SELECT * FROM parts
-      WHERE is_active = true AND current_stock < min_stock
+      WHERE is_active = true AND order_request_quantity > 0
       ORDER BY
         unit_name NULLS LAST,
-        CASE WHEN current_stock = 0 THEN 0 ELSE 1 END,
-        (current_stock::float / min_stock) ASC
+        order_request_quantity DESC
     `);
 
     res.json({

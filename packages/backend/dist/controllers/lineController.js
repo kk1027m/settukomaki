@@ -142,10 +142,10 @@ const checkAndSendNotifications = async () => {
        AND rr.next_due_date > $1
        AND rr.next_due_date <= $2
      ORDER BY rs.id, rr.replaced_at DESC`, [threeDaysFromNow.toISOString().split('T')[0], sevenDaysFromNow.toISOString().split('T')[0]]);
-    // Low stock parts
-    const lowStockResult = await (0, connection_1.query)(`SELECT part_name, current_stock as quantity, min_stock as minimum_quantity
+    // 発注依頼がある部品
+    const lowStockResult = await (0, connection_1.query)(`SELECT part_name, order_request_quantity as quantity, current_stock as minimum_quantity
      FROM parts
-     WHERE is_active = true AND current_stock < min_stock
+     WHERE is_active = true AND order_request_quantity > 0
      ORDER BY part_name ASC`);
     const message = (0, lineService_1.formatNotificationMessage)(overdueLubricationResult.rows, urgentLubricationResult.rows, scheduledLubricationResult.rows, overdueReplacementResult.rows, urgentReplacementResult.rows, scheduledReplacementResult.rows, lowStockResult.rows);
     if (!message) {
