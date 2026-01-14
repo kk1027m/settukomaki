@@ -25,6 +25,7 @@ interface Part {
   stock_status: 'sufficient' | 'low' | 'out';
   needs_order: boolean;
   ordered_quantity: number;
+  order_request_quantity: number;
 }
 
 export default function PartsPage() {
@@ -54,7 +55,7 @@ export default function PartsPage() {
     description: '',
   });
   const [adjustData, setAdjustData] = useState({
-    action_type: '入庫' as '入庫' | '出庫',
+    action_type: '入庫' as '入庫' | '出庫' | '発注済',
     quantity: 1,
     notes: '',
     reduce_ordered: false,
@@ -269,7 +270,8 @@ export default function PartsPage() {
 
   // Filter parts by selected location and search query
   const filteredParts = parts.filter(part => {
-    const matchesLocation = selectedUnit === 'all' || part.location === selectedUnit;
+    const matchesLocation = selectedUnit === 'all' ||
+      (selectedUnit === '__order_request__' ? (part.order_request_quantity || 0) > 0 : part.location === selectedUnit);
     const matchesSearch = !searchQuery ||
       part.part_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (part.part_number && part.part_number.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -323,6 +325,7 @@ export default function PartsPage() {
             onChange={(e) => setSelectedUnit(e.target.value)}
           >
             <option value="all">すべて表示</option>
+            <option value="__order_request__">発注依頼あり</option>
             {locations.filter(l => l !== 'all' && l !== null).map(location => (
               <option key={location} value={location || ''}>{location}</option>
             ))}
@@ -405,6 +408,18 @@ export default function PartsPage() {
                               <span className="text-gray-600">発注点:</span>
                               <span className="text-sm">{part.min_stock} {part.unit}</span>
                             </div>
+                            {(part.order_request_quantity || 0) > 0 && (
+                              <div className="flex justify-between items-center mt-2 pt-2 border-t border-orange-200">
+                                <span className="text-orange-600 font-medium">発注依頼:</span>
+                                <span className="text-orange-600 font-bold">{part.order_request_quantity} {part.unit}</span>
+                              </div>
+                            )}
+                            {(part.ordered_quantity || 0) > 0 && (
+                              <div className="flex justify-between items-center mt-1">
+                                <span className="text-blue-600">発注済:</span>
+                                <span className="text-blue-600 font-medium">{part.ordered_quantity} {part.unit}</span>
+                              </div>
+                            )}
                           </div>
 
                           {canEdit && (
@@ -568,6 +583,7 @@ export default function PartsPage() {
             >
               <option value="入庫">入庫</option>
               <option value="出庫">出庫</option>
+              <option value="発注済">発注済</option>
             </select>
           </div>
           <Input
@@ -578,7 +594,7 @@ export default function PartsPage() {
             onChange={(e) => setAdjustData({ ...adjustData, quantity: parseInt(e.target.value) })}
             required
           />
-          {adjustData.action_type === '入庫' && selectedPart && (selectedPart.ordered_quantity || 0) > 0 && (
+          {adjustData.action_type === '入庫' && selectedPart && ((selectedPart.ordered_quantity || 0) > 0) && (
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -590,6 +606,16 @@ export default function PartsPage() {
               <label htmlFor="reduce_ordered" className="text-sm text-gray-700">
                 発注数から引く（発注中: {selectedPart.ordered_quantity}{selectedPart.unit}）
               </label>
+            </div>
+          )}
+          {adjustData.action_type === '発注済' && selectedPart && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                発注依頼数: <span className="font-bold">{selectedPart.order_request_quantity || 0}</span> {selectedPart.unit}
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                ※発注依頼から指定数量が減り、発注済に加算されます
+              </p>
             </div>
           )}
           <div>
@@ -699,6 +725,18 @@ export default function PartsPage() {
                 <p className="text-gray-900">{viewingPart.min_stock} {viewingPart.unit}</p>
               </div>
             </div>
+            {((viewingPart.order_request_quantity || 0) > 0 || (viewingPart.ordered_quantity || 0) > 0) && (
+              <div className="grid grid-cols-2 gap-4 mt-2 pt-2 border-t">
+                <div>
+                  <label className="block text-sm font-medium text-orange-600 mb-1">発注依頼</label>
+                  <p className="text-orange-600 font-bold">{viewingPart.order_request_quantity || 0} {viewingPart.unit}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-blue-600 mb-1">発注済</label>
+                  <p className="text-blue-600 font-bold">{viewingPart.ordered_quantity || 0} {viewingPart.unit}</p>
+                </div>
+              </div>
+            )}
             {viewingPart.location && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">保管場所</label>

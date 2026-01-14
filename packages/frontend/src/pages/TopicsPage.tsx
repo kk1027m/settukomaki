@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, MessageSquare } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Edit, Trash2, MessageSquare, Package, ExternalLink } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
@@ -17,16 +18,26 @@ interface Topic {
   posted_by_full_name: string;
   created_at: string;
   updated_at: string;
+  related_entity_type?: string;
+  related_entity_id?: number;
+}
+
+interface Part {
+  id: number;
+  part_number: string | null;
+  part_name: string;
 }
 
 export default function TopicsPage() {
   const { canEdit } = useAuth();
+  const navigate = useNavigate();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
   const [viewingTopic, setViewingTopic] = useState<Topic | null>(null);
+  const [relatedPart, setRelatedPart] = useState<Part | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -87,9 +98,21 @@ export default function TopicsPage() {
     }
   };
 
-  const handleView = (topic: Topic) => {
+  const handleView = async (topic: Topic) => {
     setViewingTopic(topic);
+    setRelatedPart(null);
     setIsDetailModalOpen(true);
+
+    // Load related part data if this topic is related to a part
+    if (topic.related_entity_type === 'part' && topic.related_entity_id) {
+      try {
+        const response = await api.get(`/parts/${topic.related_entity_id}`);
+        setRelatedPart(response.data.data);
+      } catch {
+        // Part may have been deleted
+        setRelatedPart(null);
+      }
+    }
   };
 
   const resetForm = () => {
@@ -154,9 +177,17 @@ export default function TopicsPage() {
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {topic.title}
-                  </h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {topic.title}
+                    </h3>
+                    {topic.related_entity_type === 'part' && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        <Package size={12} className="mr-1" />
+                        部品
+                      </span>
+                    )}
+                  </div>
                   <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                     {topic.content}
                   </p>
@@ -248,6 +279,7 @@ export default function TopicsPage() {
         onClose={() => {
           setIsDetailModalOpen(false);
           setViewingTopic(null);
+          setRelatedPart(null);
         }}
         title="トピック詳細"
       >
@@ -268,6 +300,39 @@ export default function TopicsPage() {
                   </span>
                 )}
               </div>
+
+              {/* Related Part Info */}
+              {viewingTopic.related_entity_type === 'part' && relatedPart && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Package size={20} className="text-blue-600" />
+                      <div>
+                        <div className="text-sm text-blue-600 font-medium">関連部品</div>
+                        <div className="text-gray-900">
+                          {relatedPart.part_number && (
+                            <span className="font-mono text-sm mr-2">{relatedPart.part_number}</span>
+                          )}
+                          {relatedPart.part_name}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setIsDetailModalOpen(false);
+                        setViewingTopic(null);
+                        setRelatedPart(null);
+                        navigate('/parts');
+                      }}
+                    >
+                      <ExternalLink size={16} className="mr-1" />
+                      部品在庫へ
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="prose max-w-none">
                 <p className="text-gray-700 whitespace-pre-wrap">
                   {viewingTopic.content}
@@ -280,6 +345,7 @@ export default function TopicsPage() {
                 onClick={() => {
                   setIsDetailModalOpen(false);
                   setViewingTopic(null);
+                  setRelatedPart(null);
                 }}
               >
                 閉じる

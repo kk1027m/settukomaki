@@ -4,10 +4,10 @@ exports.deleteTopic = exports.updateTopic = exports.createTopic = exports.getTop
 const connection_1 = require("../database/connection");
 const errorHandler_1 = require("../middleware/errorHandler");
 // Helper function to create automatic notification topics
-const createNotificationTopic = async (title, content, userId) => {
+const createNotificationTopic = async (title, content, userId, entityType, entityId) => {
     try {
-        await (0, connection_1.query)(`INSERT INTO topics (title, content, posted_by)
-       VALUES ($1, $2, $3)`, [title, content, userId]);
+        await (0, connection_1.query)(`INSERT INTO topics (title, content, posted_by, related_entity_type, related_entity_id)
+       VALUES ($1, $2, $3, $4, $5)`, [title, content, userId, entityType || null, entityId || null]);
     }
     catch (error) {
         console.error('Failed to create notification topic:', error);

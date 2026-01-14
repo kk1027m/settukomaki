@@ -40,7 +40,7 @@ router.post(
   '/:id/adjust',
   requireLeaderOrAdmin,
   [
-    body('action_type').isIn(['入庫', '出庫']).withMessage('Invalid action type'),
+    body('action_type').isIn(['入庫', '出庫', '発注済']).withMessage('Invalid action type'),
     body('quantity').isInt({ min: 1 }).withMessage('Quantity must be a positive integer'),
     validateRequest,
   ],

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus, Clock } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
@@ -14,6 +14,7 @@ interface CalendarEvent {
   title: string;
   description: string | null;
   color: string;
+  start_time: string | null;
   created_by_name: string;
 }
 
@@ -24,14 +25,14 @@ interface DayColor {
 }
 
 const EVENT_COLORS = [
-  { value: 'blue', label: '青', bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-300' },
-  { value: 'green', label: '緑', bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-300' },
-  { value: 'yellow', label: '黄', bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300' },
-  { value: 'red', label: '赤', bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-300' },
-  { value: 'purple', label: '紫', bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-300' },
-  { value: 'pink', label: 'ピンク', bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-300' },
-  { value: 'orange', label: 'オレンジ', bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-300' },
-  { value: 'gray', label: 'グレー', bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-300' },
+  { value: 'blue', label: '青', bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-300', dot: 'bg-blue-500' },
+  { value: 'green', label: '緑', bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-300', dot: 'bg-green-500' },
+  { value: 'yellow', label: '黄', bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300', dot: 'bg-yellow-500' },
+  { value: 'red', label: '赤', bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-300', dot: 'bg-red-500' },
+  { value: 'purple', label: '紫', bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-300', dot: 'bg-purple-500' },
+  { value: 'pink', label: 'ピンク', bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-300', dot: 'bg-pink-500' },
+  { value: 'orange', label: 'オレンジ', bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-300', dot: 'bg-orange-500' },
+  { value: 'gray', label: 'グレー', bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-300', dot: 'bg-gray-500' },
 ];
 
 const DAY_COLORS = [
@@ -45,6 +46,13 @@ const DAY_COLORS = [
   { value: 'orange', label: 'オレンジ', bg: 'bg-orange-50' },
 ];
 
+// 時刻を表示用にフォーマット（HH:MM形式）
+const formatTime = (time: string | null): string => {
+  if (!time) return '';
+  // "HH:MM:SS" or "HH:MM" 形式を "HH:MM" に変換
+  return time.slice(0, 5);
+};
+
 export default function CalendarPage() {
   const { canEdit } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -53,6 +61,7 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isDayColorModalOpen, setIsDayColorModalOpen] = useState(false);
+  const [isDayEventsModalOpen, setIsDayEventsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [eventFormData, setEventFormData] = useState({
@@ -60,6 +69,7 @@ export default function CalendarPage() {
     title: '',
     description: '',
     color: 'blue',
+    start_time: '',
   });
   const [selectedDayColor, setSelectedDayColor] = useState('');
   const [isBulkMode, setIsBulkMode] = useState(false);
@@ -149,6 +159,11 @@ export default function CalendarPage() {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   };
 
+  const formatDateDisplay = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return `${date.getMonth() + 1}月${date.getDate()}日`;
+  };
+
   const getEventsForDate = (dateStr: string) => {
     return events.filter((event) => event.date.split('T')[0] === dateStr);
   };
@@ -166,22 +181,15 @@ export default function CalendarPage() {
     return DAY_COLORS.find((c) => c.value === color)?.bg || '';
   };
 
+  // 日付クリック → 予定一覧モーダルを表示
   const handleDateClick = (date: Date) => {
-    if (!canEdit) return;
     if (longPressTriggered.current) {
       longPressTriggered.current = false;
       return;
     }
     const dateStr = formatDateString(date);
     setSelectedDate(dateStr);
-    setEventFormData({
-      date: dateStr,
-      title: '',
-      description: '',
-      color: 'blue',
-    });
-    setEditingEvent(null);
-    setIsEventModalOpen(true);
+    setIsDayEventsModalOpen(true);
   };
 
   const handleDateLongPress = (date: Date) => {
@@ -198,7 +206,6 @@ export default function CalendarPage() {
 
   // タッチ開始（長押し検出用）
   const handleTouchStart = (date: Date) => {
-    if (!canEdit) return;
     longPressTriggered.current = false;
     longPressTimer.current = setTimeout(() => {
       longPressTriggered.current = true;
@@ -214,8 +221,22 @@ export default function CalendarPage() {
     }
   };
 
-  const handleEditEvent = (event: CalendarEvent, e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
+  // 予定追加モーダルを開く
+  const handleAddEvent = () => {
+    setEditingEvent(null);
+    setEventFormData({
+      date: selectedDate,
+      title: '',
+      description: '',
+      color: 'blue',
+      start_time: '',
+    });
+    setIsDayEventsModalOpen(false);
+    setIsEventModalOpen(true);
+  };
+
+  // 予定編集モーダルを開く
+  const handleEditEvent = (event: CalendarEvent) => {
     if (!canEdit) return;
     setEditingEvent(event);
     setEventFormData({
@@ -223,12 +244,13 @@ export default function CalendarPage() {
       title: event.title,
       description: event.description || '',
       color: event.color,
+      start_time: event.start_time ? formatTime(event.start_time) : '',
     });
+    setIsDayEventsModalOpen(false);
     setIsEventModalOpen(true);
   };
 
-  const handleDeleteEvent = async (event: CalendarEvent, e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
+  const handleDeleteEvent = async (event: CalendarEvent) => {
     if (!canEdit) return;
     if (!confirm('この予定を削除しますか？')) return;
 
@@ -236,6 +258,9 @@ export default function CalendarPage() {
       await api.delete(`/calendar/events/${event.id}`);
       toast.success('予定を削除しました');
       loadData();
+      // 予定一覧モーダルを更新するために再表示
+      setIsDayEventsModalOpen(false);
+      setTimeout(() => setIsDayEventsModalOpen(true), 100);
     } catch (error) {
       toast.error('削除に失敗しました');
     }
@@ -245,11 +270,16 @@ export default function CalendarPage() {
     e.preventDefault();
 
     try {
+      const submitData = {
+        ...eventFormData,
+        start_time: eventFormData.start_time || null,
+      };
+
       if (editingEvent) {
-        await api.put(`/calendar/events/${editingEvent.id}`, eventFormData);
+        await api.put(`/calendar/events/${editingEvent.id}`, submitData);
         toast.success('予定を更新しました');
       } else {
-        await api.post('/calendar/events', eventFormData);
+        await api.post('/calendar/events', submitData);
         toast.success('予定を追加しました');
       }
       setIsEventModalOpen(false);
@@ -276,7 +306,7 @@ export default function CalendarPage() {
           current.setDate(current.getDate() + 1);
         }
         await Promise.all(
-          dates.map(date => 
+          dates.map(date =>
             api.post('/calendar/day-colors', {
               date,
               color: selectedDayColor || null,
@@ -301,6 +331,7 @@ export default function CalendarPage() {
   const days = getDaysInMonth();
   const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
   const today = formatDateString(new Date());
+  const selectedDayEvents = getEventsForDate(selectedDate);
 
   return (
     <div>
@@ -326,7 +357,7 @@ export default function CalendarPage() {
           <h2 className="text-lg md:text-xl font-bold whitespace-nowrap">
             {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月
           </h2>
-          
+
         </div>
 
         {/* 曜日ヘッダー */}
@@ -383,30 +414,47 @@ export default function CalendarPage() {
                   >
                     {day.date.getDate()}
                   </div>
+                  {/* スマホ: ドット表示 / PC: タイトル表示 */}
                   <div className="space-y-1">
-                    {dayEvents.slice(0, 3).map((event) => {
-                      const colorClasses = getColorClasses(event.color);
-                      return (
-                        <div
-                          key={event.id}
-                          className={`text-xs p-1 rounded truncate ${colorClasses.bg} ${colorClasses.text} ${colorClasses.border} border group relative`}
-                          onClick={(e) => handleEditEvent(event, e)}
-                        >
-                          <span className="truncate">{event.title}</span>
-                          {canEdit && (
-                            <button
-                              className="absolute right-0 top-0 p-0.5 opacity-0 group-hover:opacity-100 bg-white rounded"
-                              onClick={(e) => handleDeleteEvent(event, e)}
-                            >
-                              <X size={12} className="text-red-500" />
-                            </button>
+                    {/* スマホ用: ドット表示 */}
+                    <div className="md:hidden">
+                      {dayEvents.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {dayEvents.slice(0, 4).map((event) => {
+                            const colorClasses = getColorClasses(event.color);
+                            return (
+                              <div
+                                key={event.id}
+                                className={`w-2 h-2 rounded-full ${colorClasses.dot}`}
+                              />
+                            );
+                          })}
+                          {dayEvents.length > 4 && (
+                            <span className="text-xs text-gray-500">+{dayEvents.length - 4}</span>
                           )}
                         </div>
-                      );
-                    })}
-                    {dayEvents.length > 3 && (
-                      <div className="text-xs text-gray-500">+{dayEvents.length - 3}件</div>
-                    )}
+                      )}
+                    </div>
+                    {/* PC用: タイトル表示 */}
+                    <div className="hidden md:block">
+                      {dayEvents.slice(0, 3).map((event) => {
+                        const colorClasses = getColorClasses(event.color);
+                        return (
+                          <div
+                            key={event.id}
+                            className={`text-xs p-1 rounded truncate ${colorClasses.bg} ${colorClasses.text} ${colorClasses.border} border mb-1`}
+                          >
+                            {event.start_time && (
+                              <span className="font-medium">{formatTime(event.start_time)} </span>
+                            )}
+                            <span className="truncate">{event.title}</span>
+                          </div>
+                        );
+                      })}
+                      {dayEvents.length > 3 && (
+                        <div className="text-xs text-gray-500">+{dayEvents.length - 3}件</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -419,13 +467,75 @@ export default function CalendarPage() {
           <div className="mt-4 p-3 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-600 mb-2">操作方法:</p>
             <ul className="text-sm text-gray-600 space-y-1">
-              <li>・日付をタップ: 予定を追加</li>
-              <li>・予定をタップ: 予定を編集</li>
+              <li>・日付をタップ: 予定一覧を表示</li>
               <li>・日付を長押し: 日付の背景色を設定</li>
             </ul>
           </div>
         )}
       </Card>
+
+      {/* 日別予定一覧モーダル */}
+      <Modal
+        isOpen={isDayEventsModalOpen}
+        onClose={() => setIsDayEventsModalOpen(false)}
+        title={`${formatDateDisplay(selectedDate)}の予定`}
+      >
+        <div className="space-y-4">
+          {selectedDayEvents.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">予定はありません</p>
+          ) : (
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+              {selectedDayEvents.map((event) => {
+                const colorClasses = getColorClasses(event.color);
+                return (
+                  <div
+                    key={event.id}
+                    className={`p-3 rounded-lg border ${colorClasses.bg} ${colorClasses.border} ${canEdit ? 'cursor-pointer hover:opacity-80' : ''}`}
+                    onClick={() => canEdit && handleEditEvent(event)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          {event.start_time && (
+                            <span className={`text-sm font-medium ${colorClasses.text} flex items-center gap-1`}>
+                              <Clock size={14} />
+                              {formatTime(event.start_time)}
+                            </span>
+                          )}
+                          <span className={`font-medium ${colorClasses.text}`}>{event.title}</span>
+                        </div>
+                        {event.description && (
+                          <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{event.description}</p>
+                        )}
+                        <p className="text-xs text-gray-400 mt-1">作成者: {event.created_by_name}</p>
+                      </div>
+                      {canEdit && (
+                        <button
+                          className="p-1 hover:bg-white rounded ml-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteEvent(event);
+                          }}
+                        >
+                          <X size={16} className="text-red-500" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {canEdit && (
+            <div className="pt-2 border-t">
+              <Button onClick={handleAddEvent} className="w-full flex items-center justify-center gap-2">
+                <Plus size={16} />
+                予定を追加
+              </Button>
+            </div>
+          )}
+        </div>
+      </Modal>
 
       {/* イベント追加/編集モーダル */}
       <Modal
@@ -440,6 +550,12 @@ export default function CalendarPage() {
             value={eventFormData.date}
             onChange={(e) => setEventFormData({ ...eventFormData, date: e.target.value })}
             required
+          />
+          <Input
+            label="時刻"
+            type="time"
+            value={eventFormData.start_time}
+            onChange={(e) => setEventFormData({ ...eventFormData, start_time: e.target.value })}
           />
           <Input
             label="タイトル"
@@ -500,7 +616,7 @@ export default function CalendarPage() {
               まとめて設定
             </label>
           </div>
-          
+
           {isBulkMode ? (
             <div className="flex gap-2 items-center">
               <input

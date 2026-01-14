@@ -4,12 +4,18 @@ import { AppError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 
 // Helper function to create automatic notification topics
-export const createNotificationTopic = async (title: string, content: string, userId: number) => {
+export const createNotificationTopic = async (
+  title: string,
+  content: string,
+  userId: number,
+  entityType?: string,
+  entityId?: number
+) => {
   try {
     await query(
-      `INSERT INTO topics (title, content, posted_by)
-       VALUES ($1, $2, $3)`,
-      [title, content, userId]
+      `INSERT INTO topics (title, content, posted_by, related_entity_type, related_entity_id)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [title, content, userId, entityType || null, entityId || null]
     );
   } catch (error) {
     console.error('Failed to create notification topic:', error);

@@ -21,7 +21,7 @@ export const getEvents = async (req: AuthRequest, res: Response, next: any) => {
       values.push(year, month);
     }
 
-    sql += ` ORDER BY e.date ASC, e.created_at ASC`;
+    sql += ` ORDER BY e.date ASC, e.start_time ASC NULLS LAST, e.created_at ASC`;
 
     const result = await query(sql, values);
 
@@ -61,7 +61,7 @@ export const getDayColors = async (req: AuthRequest, res: Response, next: any) =
 // イベント作成
 export const createEvent = async (req: AuthRequest, res: Response, next: any) => {
   try {
-    const { date, title, description, color } = req.body;
+    const { date, title, description, color, start_time } = req.body;
     const userId = req.user?.id;
 
     if (!date || !title) {
@@ -69,10 +69,10 @@ export const createEvent = async (req: AuthRequest, res: Response, next: any) =>
     }
 
     const result = await query(
-      `INSERT INTO calendar_events (date, title, description, color, created_by)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO calendar_events (date, title, description, color, start_time, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [date, title, description || null, color || 'blue', userId]
+      [date, title, description || null, color || 'blue', start_time || null, userId]
     );
 
     res.status(201).json({
@@ -88,7 +88,7 @@ export const createEvent = async (req: AuthRequest, res: Response, next: any) =>
 export const updateEvent = async (req: AuthRequest, res: Response, next: any) => {
   try {
     const { id } = req.params;
-    const { date, title, description, color } = req.body;
+    const { date, title, description, color, start_time } = req.body;
 
     const updates: string[] = [];
     const values: any[] = [];
@@ -112,6 +112,11 @@ export const updateEvent = async (req: AuthRequest, res: Response, next: any) =>
     if (color !== undefined) {
       updates.push(`color = $${paramCount++}`);
       values.push(color);
+    }
+
+    if (start_time !== undefined) {
+      updates.push(`start_time = $${paramCount++}`);
+      values.push(start_time || null);
     }
 
     if (updates.length === 0) {

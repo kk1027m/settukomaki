@@ -18,7 +18,7 @@ const getEvents = async (req, res, next) => {
             sql += ` AND EXTRACT(YEAR FROM e.date) = $1 AND EXTRACT(MONTH FROM e.date) = $2`;
             values.push(year, month);
         }
-        sql += ` ORDER BY e.date ASC, e.created_at ASC`;
+        sql += ` ORDER BY e.date ASC, e.start_time ASC NULLS LAST, e.created_at ASC`;
         const result = await (0, connection_1.query)(sql, values);
         res.json({
             success: true,
@@ -54,14 +54,14 @@ exports.getDayColors = getDayColors;
 // イベント作成
 const createEvent = async (req, res, next) => {
     try {
-        const { date, title, description, color } = req.body;
+        const { date, title, description, color, start_time } = req.body;
         const userId = req.user?.id;
         if (!date || !title) {
             throw new errorHandler_1.AppError('日付とタイトルは必須です', 400);
         }
-        const result = await (0, connection_1.query)(`INSERT INTO calendar_events (date, title, description, color, created_by)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`, [date, title, description || null, color || 'blue', userId]);
+        const result = await (0, connection_1.query)(`INSERT INTO calendar_events (date, title, description, color, start_time, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`, [date, title, description || null, color || 'blue', start_time || null, userId]);
         res.status(201).json({
             success: true,
             data: result.rows[0],
@@ -76,7 +76,7 @@ exports.createEvent = createEvent;
 const updateEvent = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { date, title, description, color } = req.body;
+        const { date, title, description, color, start_time } = req.body;
         const updates = [];
         const values = [];
         let paramCount = 1;
@@ -95,6 +95,10 @@ const updateEvent = async (req, res, next) => {
         if (color !== undefined) {
             updates.push(`color = $${paramCount++}`);
             values.push(color);
+        }
+        if (start_time !== undefined) {
+            updates.push(`start_time = $${paramCount++}`);
+            values.push(start_time || null);
         }
         if (updates.length === 0) {
             throw new errorHandler_1.AppError('更新するフィールドがありません', 400);

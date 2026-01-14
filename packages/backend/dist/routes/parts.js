@@ -56,7 +56,7 @@ router.post('/', auth_1.requireLeaderOrAdmin, [
 router.put('/:id', auth_1.requireLeaderOrAdmin, partController.updatePart);
 router.delete('/:id', auth_1.requireLeaderOrAdmin, partController.deletePart);
 router.post('/:id/adjust', auth_1.requireLeaderOrAdmin, [
-    (0, express_validator_1.body)('action_type').isIn(['入庫', '出庫']).withMessage('Invalid action type'),
+    (0, express_validator_1.body)('action_type').isIn(['入庫', '出庫', '発注済']).withMessage('Invalid action type'),
     (0, express_validator_1.body)('quantity').isInt({ min: 1 }).withMessage('Quantity must be a positive integer'),
     validateRequest_1.validateRequest,
 ], partController.adjustStock);

@@ -72,7 +72,9 @@ export const createPart = async (req: AuthRequest, res: Response, next: any) => 
     await createNotificationTopic(
       '部品が追加されました',
       `${part_name}${part_number ? ' (' + part_number + ')' : ''} が在庫に追加されました。`,
-      req.user?.id || 1
+      req.user?.id || 1,
+      'part',
+      partData.id
     );
 
     res.status(201).json({
@@ -170,7 +172,9 @@ export const updatePart = async (req: AuthRequest, res: Response, next: any) => 
     await createNotificationTopic(
       '部品情報が編集されました',
       `部品番号: ${updatedPart.part_number} - ${updatedPart.part_name} の情報が編集されました。`,
-      req.user?.id || 1
+      req.user?.id || 1,
+      'part',
+      updatedPart.id
     );
 
     res.json({
@@ -238,13 +242,28 @@ export const adjustStock = async (req: AuthRequest, res: Response, next: any) =>
       }
     } else if (action_type === '調整') {
       stock_after = quantity;
+    } else if (action_type === '発注済') {
+      // 発注依頼から指定数量をマイナスし、発注済(ordered_quantity)にプラス
+      const order_request_qty = part.order_request_quantity || 0;
+      if (quantity > order_request_qty) {
+        throw new AppError('発注依頼数量を超えています', 400);
+      }
+      // 在庫は変わらない
+      stock_after = stock_before;
     }
 
     // Update part stock and min_stock
-    await query(
-      'UPDATE parts SET current_stock = $1, min_stock = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
-      [stock_after, min_stock_after, id]
-    );
+    if (action_type === '発注済') {
+      await query(
+        'UPDATE parts SET order_request_quantity = order_request_quantity - $1, ordered_quantity = ordered_quantity + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [quantity, id]
+      );
+    } else {
+      await query(
+        'UPDATE parts SET current_stock = $1, min_stock = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+        [stock_after, min_stock_after, id]
+      );
+    }
 
     // Insert history record
     const historyResult = await query(
@@ -261,7 +280,9 @@ export const adjustStock = async (req: AuthRequest, res: Response, next: any) =>
     await createNotificationTopic(
       `在庫が${action_type}されました`,
       `${part.part_name}${part.part_number ? ' (' + part.part_number + ')' : ''} の在庫が${action_type}されました。(${stock_before}${part.unit} → ${stock_after}${part.unit})`,
-      req.user?.id || 1
+      req.user?.id || 1,
+      'part',
+      part.id
     );
 
     res.json({
@@ -313,6 +334,12 @@ export const orderRequest = async (req: AuthRequest, res: Response, next: any) =
 
     const part = partResult.rows[0];
 
+    // Update order_request_quantity
+    await query(
+      'UPDATE parts SET order_request_quantity = order_request_quantity + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [quantity, id]
+    );
+
     // Create history record
     await query(
       `INSERT INTO part_history (part_id, action_type, quantity, stock_before, stock_after, performed_by, notes)
@@ -322,7 +349,7 @@ export const orderRequest = async (req: AuthRequest, res: Response, next: any) =
 
     // Create notification for admins
     const title = `発注依頼: ${part.part_name}`;
-    const message = `${part.part_name} の発注依頼があります。数量: ${quantity}${part.unit}。緊急度: ${urgency === 'urgent' ? '緊急' : '通常'}`;
+    const message = `${part.part_name}${part.part_number ? ' (' + part.part_number + ')' : ''} の発注依頼があります。数量: ${quantity}${part.unit}。緊急度: ${urgency === 'urgent' ? '緊急' : '通常'}`;
 
     await query(
       `INSERT INTO notifications (type, title, message, entity_type, entity_id)
@@ -335,7 +362,9 @@ export const orderRequest = async (req: AuthRequest, res: Response, next: any) =
     await createNotificationTopic(
       title,
       message,
-      req.user?.id || 1
+      req.user?.id || 1,
+      'part',
+      part.id
     );
 
     res.json({
