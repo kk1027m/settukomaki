@@ -47,7 +47,8 @@ export default function PartsPage() {
     part_number: '',
     part_name: '',
     current_stock: 1,
-    min_stock: '' as number | '',
+    order_request_quantity: 0,
+    ordered_quantity: 0,
     unit: '個',
     unit_name: '',
     location: '',
@@ -138,18 +139,12 @@ export default function PartsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // min_stockが空欄の場合は0として送信
-    const submitData = {
-      ...formData,
-      min_stock: formData.min_stock === '' ? 0 : formData.min_stock,
-    };
-
     try {
       if (editingPart) {
         await api.put(`/parts/${editingPart.id}`, formData);
         toast.success('部品情報を更新しました');
       } else {
-        await api.post('/parts', submitData);
+        await api.post('/parts', { ...formData, min_stock: 0 });
         toast.success('部品を追加しました');
       }
       setIsModalOpen(false);
@@ -207,7 +202,8 @@ export default function PartsPage() {
       part_number: part.part_number || '',
       part_name: part.part_name,
       current_stock: part.current_stock,
-      min_stock: part.min_stock,
+      order_request_quantity: part.order_request_quantity || 0,
+      ordered_quantity: part.ordered_quantity || 0,
       unit: part.unit,
       unit_name: part.unit_name || '',
       location: part.location || '',
@@ -228,7 +224,8 @@ export default function PartsPage() {
       part_number: '',
       part_name: '',
       current_stock: 1,
-      min_stock: '' as number | '',
+      order_request_quantity: 0,
+      ordered_quantity: 0,
       unit: '個',
       unit_name: '',
       location: '',
@@ -270,8 +267,16 @@ export default function PartsPage() {
 
   // Filter parts by selected location and search query
   const filteredParts = parts.filter(part => {
-    const matchesLocation = selectedUnit === 'all' ||
-      (selectedUnit === '__order_request__' ? (part.order_request_quantity || 0) > 0 : part.location === selectedUnit);
+    let matchesLocation = false;
+    if (selectedUnit === 'all') {
+      matchesLocation = true;
+    } else if (selectedUnit === '__order_request__') {
+      matchesLocation = (part.order_request_quantity || 0) > 0;
+    } else if (selectedUnit === '__ordered__') {
+      matchesLocation = (part.ordered_quantity || 0) > 0;
+    } else {
+      matchesLocation = part.location === selectedUnit;
+    }
     const matchesSearch = !searchQuery ||
       part.part_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (part.part_number && part.part_number.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -326,6 +331,7 @@ export default function PartsPage() {
           >
             <option value="all">すべて表示</option>
             <option value="__order_request__">発注依頼あり</option>
+            <option value="__ordered__">発注済あり</option>
             {locations.filter(l => l !== 'all' && l !== null).map(location => (
               <option key={location} value={location || ''}>{location}</option>
             ))}
@@ -404,12 +410,8 @@ export default function PartsPage() {
                                 {part.current_stock} {part.unit}
                               </span>
                             </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-600">発注点:</span>
-                              <span className="text-sm">{part.min_stock} {part.unit}</span>
-                            </div>
                             {(part.order_request_quantity || 0) > 0 && (
-                              <div className="flex justify-between items-center mt-2 pt-2 border-t border-orange-200">
+                              <div className="flex justify-between items-center pt-2 border-t border-orange-200">
                                 <span className="text-orange-600 font-medium">発注依頼:</span>
                                 <span className="text-orange-600 font-bold">{part.order_request_quantity} {part.unit}</span>
                               </div>
@@ -511,21 +513,31 @@ export default function PartsPage() {
             onChange={(e) => setFormData({ ...formData, part_name: e.target.value })}
             required
           />
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="現在庫"
-              type="number"
-              value={formData.current_stock}
-              onChange={(e) => setFormData({ ...formData, current_stock: parseInt(e.target.value) })}
-              required
-            />
-            <Input
-              label="発注点"
-              type="number"
-              value={formData.min_stock}
-              onChange={(e) => setFormData({ ...formData, min_stock: e.target.value === '' ? '' : parseInt(e.target.value) })}
-            />
-          </div>
+          <Input
+            label="現在庫"
+            type="number"
+            value={formData.current_stock}
+            onChange={(e) => setFormData({ ...formData, current_stock: parseInt(e.target.value) || 0 })}
+            required
+          />
+          {editingPart && (
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="発注依頼"
+                type="number"
+                min="0"
+                value={formData.order_request_quantity}
+                onChange={(e) => setFormData({ ...formData, order_request_quantity: parseInt(e.target.value) || 0 })}
+              />
+              <Input
+                label="発注済"
+                type="number"
+                min="0"
+                value={formData.ordered_quantity}
+                onChange={(e) => setFormData({ ...formData, ordered_quantity: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+          )}
           <Input
             label="単位"
             value={formData.unit}
@@ -715,28 +727,20 @@ export default function PartsPage() {
                 <p className="text-gray-900">{viewingPart.part_number}</p>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">現在庫</label>
+              <p className="text-gray-900 text-xl font-bold">{viewingPart.current_stock} {viewingPart.unit}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-2 pt-2 border-t">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">現在庫</label>
-                <p className="text-gray-900 text-xl font-bold">{viewingPart.current_stock} {viewingPart.unit}</p>
+                <label className="block text-sm font-medium text-orange-600 mb-1">発注依頼</label>
+                <p className="text-orange-600 font-bold">{viewingPart.order_request_quantity || 0} {viewingPart.unit}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">発注点</label>
-                <p className="text-gray-900">{viewingPart.min_stock} {viewingPart.unit}</p>
+                <label className="block text-sm font-medium text-blue-600 mb-1">発注済</label>
+                <p className="text-blue-600 font-bold">{viewingPart.ordered_quantity || 0} {viewingPart.unit}</p>
               </div>
             </div>
-            {((viewingPart.order_request_quantity || 0) > 0 || (viewingPart.ordered_quantity || 0) > 0) && (
-              <div className="grid grid-cols-2 gap-4 mt-2 pt-2 border-t">
-                <div>
-                  <label className="block text-sm font-medium text-orange-600 mb-1">発注依頼</label>
-                  <p className="text-orange-600 font-bold">{viewingPart.order_request_quantity || 0} {viewingPart.unit}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-blue-600 mb-1">発注済</label>
-                  <p className="text-blue-600 font-bold">{viewingPart.ordered_quantity || 0} {viewingPart.unit}</p>
-                </div>
-              </div>
-            )}
             {viewingPart.location && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">保管場所</label>

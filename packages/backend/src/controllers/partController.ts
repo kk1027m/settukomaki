@@ -93,7 +93,7 @@ export const createPart = async (req: AuthRequest, res: Response, next: any) => 
 export const updatePart = async (req: AuthRequest, res: Response, next: any) => {
   try {
     const { id } = req.params;
-    const { part_number, part_name, current_stock, min_stock, unit, unit_name, location, shelf_box_name, description, is_active } = req.body;
+    const { part_number, part_name, current_stock, min_stock, unit, unit_name, location, shelf_box_name, description, is_active, order_request_quantity, ordered_quantity } = req.body;
 
     const updates: string[] = [];
     const values: any[] = [];
@@ -147,6 +147,16 @@ export const updatePart = async (req: AuthRequest, res: Response, next: any) => 
     if (is_active !== undefined) {
       updates.push(`is_active = $${paramCount++}`);
       values.push(is_active);
+    }
+
+    if (order_request_quantity !== undefined) {
+      updates.push(`order_request_quantity = $${paramCount++}`);
+      values.push(order_request_quantity);
+    }
+
+    if (ordered_quantity !== undefined) {
+      updates.push(`ordered_quantity = $${paramCount++}`);
+      values.push(ordered_quantity);
     }
 
     if (updates.length === 0) {

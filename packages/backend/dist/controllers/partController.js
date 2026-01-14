@@ -78,7 +78,7 @@ exports.createPart = createPart;
 const updatePart = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { part_number, part_name, current_stock, min_stock, unit, unit_name, location, shelf_box_name, description, is_active } = req.body;
+        const { part_number, part_name, current_stock, min_stock, unit, unit_name, location, shelf_box_name, description, is_active, order_request_quantity, ordered_quantity } = req.body;
         const updates = [];
         const values = [];
         let paramCount = 1;
@@ -121,6 +121,14 @@ const updatePart = async (req, res, next) => {
         if (is_active !== undefined) {
             updates.push(`is_active = $${paramCount++}`);
             values.push(is_active);
+        }
+        if (order_request_quantity !== undefined) {
+            updates.push(`order_request_quantity = $${paramCount++}`);
+            values.push(order_request_quantity);
+        }
+        if (ordered_quantity !== undefined) {
+            updates.push(`ordered_quantity = $${paramCount++}`);
+            values.push(ordered_quantity);
         }
         if (updates.length === 0) {
             throw new errorHandler_1.AppError('No fields to update', 400);
