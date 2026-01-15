@@ -178,9 +178,9 @@ export default function TroubleshootingPage() {
           <span className="hidden md:inline">トラブルシューティング</span>
         </h1>
         {canEdit && (
-          <Button onClick={handleAdd} className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
+          <Button onClick={handleAdd} className="flex flex-col items-center gap-1 flex-shrink-0 px-4 py-2">
             <Plus size={20} />
-            新規追加
+            <span className="text-xs">新規追加</span>
           </Button>
         )}
       </div>
