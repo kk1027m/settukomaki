@@ -14,6 +14,7 @@ import TopicsPage from './pages/TopicsPage';
 import MaintenanceProceduresPage from './pages/MaintenanceProceduresPage';
 import InquiriesPage from './pages/InquiriesPage';
 import CalendarPage from './pages/CalendarPage';
+import TroubleshootingPage from './pages/TroubleshootingPage';
 import AlertDetailsPage from './pages/AlertDetailsPage';
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
             <Route path="/replacements" element={<ReplacementPage />} />
             <Route path="/parts" element={<PartsPage />} />
             <Route path="/maintenance-procedures" element={<MaintenanceProceduresPage />} />
+            <Route path="/troubleshooting" element={<TroubleshootingPage />} />
             <Route path="/topics" element={<TopicsPage />} />
             <Route path="/inquiries" element={<InquiriesPage />} />
             <Route path="/calendar" element={<CalendarPage />} />

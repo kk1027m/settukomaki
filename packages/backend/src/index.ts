@@ -20,6 +20,7 @@ import maintenanceProceduresRoutes from './routes/maintenanceProcedures';
 import inquiriesRoutes from './routes/inquiries';
 import lineRoutes from './routes/line';
 import calendarRoutes from './routes/calendar';
+import troubleshootingRoutes from './routes/troubleshooting';
 
 // Load environment variables
 dotenv.config();
@@ -68,6 +69,7 @@ app.use('/api/maintenance-procedures', maintenanceProceduresRoutes);
 app.use('/api/inquiries', inquiriesRoutes);
 app.use('/api/line', lineRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/troubleshooting', troubleshootingRoutes);
 
 // 404 handler
 app.use((req, res) => {
