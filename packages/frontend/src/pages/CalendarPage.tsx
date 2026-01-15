@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 interface CalendarEvent {
   id: number;
   date: string;
+  end_date: string | null;
   title: string;
   description: string | null;
   color: string;
@@ -73,6 +74,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [eventFormData, setEventFormData] = useState({
     date: '',
+    end_date: '',
     title: '',
     description: '',
     color: 'blue',
@@ -190,7 +192,38 @@ export default function CalendarPage() {
   };
 
   const getEventsForDate = (dateStr: string) => {
-    return events.filter((event) => event.date.split('T')[0] === dateStr);
+    return events.filter((event) => {
+      const eventStart = event.date.split('T')[0];
+      const eventEnd = event.end_date ? event.end_date.split('T')[0] : eventStart;
+      return dateStr >= eventStart && dateStr <= eventEnd;
+    });
+  };
+
+  // 複数日イベントの日付位置を判定 ('start' | 'middle' | 'end' | 'single')
+  const getEventDatePosition = (event: CalendarEvent, dateStr: string): 'start' | 'middle' | 'end' | 'single' => {
+    const eventStart = event.date.split('T')[0];
+    const eventEnd = event.end_date ? event.end_date.split('T')[0] : eventStart;
+
+    if (eventStart === eventEnd) return 'single';
+    if (dateStr === eventStart) return 'start';
+    if (dateStr === eventEnd) return 'end';
+    return 'middle';
+  };
+
+  // 期間表示フォーマット（例：1/15〜17）
+  const formatDateRange = (event: CalendarEvent): string => {
+    if (!event.end_date) return '';
+    const start = new Date(event.date);
+    const end = new Date(event.end_date);
+    const startMonth = start.getMonth() + 1;
+    const startDay = start.getDate();
+    const endMonth = end.getMonth() + 1;
+    const endDay = end.getDate();
+
+    if (startMonth === endMonth) {
+      return `(${startMonth}/${startDay}〜${endDay})`;
+    }
+    return `(${startMonth}/${startDay}〜${endMonth}/${endDay})`;
   };
 
   const getDayColorForDate = (dateStr: string) => {
@@ -311,6 +344,7 @@ export default function CalendarPage() {
     setEditingEvent(null);
     setEventFormData({
       date: selectedDate,
+      end_date: '',
       title: '',
       description: '',
       color: 'blue',
@@ -326,6 +360,7 @@ export default function CalendarPage() {
     setEditingEvent(event);
     setEventFormData({
       date: event.date.split('T')[0],
+      end_date: event.end_date ? event.end_date.split('T')[0] : '',
       title: event.title,
       description: event.description || '',
       color: event.color,
@@ -357,6 +392,7 @@ export default function CalendarPage() {
     try {
       const submitData = {
         ...eventFormData,
+        end_date: eventFormData.end_date || null,
         start_time: eventFormData.start_time || null,
       };
 
@@ -546,15 +582,23 @@ export default function CalendarPage() {
                             <div className="hidden md:block">
                               {dayEvents.slice(0, 3).map((event) => {
                                 const colorClasses = getColorClasses(event.color);
+                                const position = getEventDatePosition(event, dateStr);
+                                const dateRange = formatDateRange(event);
                                 return (
                                   <div
                                     key={event.id}
                                     className={`text-xs p-1 rounded truncate ${colorClasses.bg} ${colorClasses.text} ${colorClasses.border} border mb-1`}
                                   >
-                                    {event.start_time && (
+                                    {position === 'start' && <span>▶</span>}
+                                    {position === 'middle' && <span>━</span>}
+                                    {position === 'end' && <span>◀</span>}
+                                    {event.start_time && position === 'start' && (
                                       <span className="font-medium">{formatTime(event.start_time)} </span>
                                     )}
-                                    <span className="truncate">{event.title}</span>
+                                    <span className="truncate">
+                                      {event.title}
+                                      {position === 'start' && dateRange && <span className="text-gray-500 ml-1">{dateRange}</span>}
+                                    </span>
                                   </div>
                                 );
                               })}
@@ -603,6 +647,8 @@ export default function CalendarPage() {
                 <div className="space-y-2 max-h-[40vh] overflow-y-auto">
                   {dayEvents.map((event) => {
                     const colorClasses = getColorClasses(event.color);
+                    const position = getEventDatePosition(event, selectedDate);
+                    const dateRange = formatDateRange(event);
                     return (
                       <div
                         key={event.id}
@@ -611,14 +657,24 @@ export default function CalendarPage() {
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              {event.start_time && (
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {position !== 'single' && (
+                                <span className={`text-sm ${colorClasses.text}`}>
+                                  {position === 'start' && '▶開始'}
+                                  {position === 'middle' && '━継続中'}
+                                  {position === 'end' && '◀終了'}
+                                </span>
+                              )}
+                              {event.start_time && position === 'start' && (
                                 <span className={`text-sm font-medium ${colorClasses.text} flex items-center gap-1`}>
                                   <Clock size={14} />
                                   {formatTime(event.start_time)}
                                 </span>
                               )}
                               <span className={`font-medium ${colorClasses.text}`}>{event.title}</span>
+                              {dateRange && (
+                                <span className="text-sm text-gray-500">{dateRange}</span>
+                              )}
                             </div>
                             {event.description && (
                               <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{event.description}</p>
@@ -700,13 +756,21 @@ export default function CalendarPage() {
         title={editingEvent ? '予定を編集' : '予定を追加'}
       >
         <form onSubmit={handleEventSubmit} className="space-y-4">
-          <Input
-            label="日付"
-            type="date"
-            value={eventFormData.date}
-            onChange={(e) => setEventFormData({ ...eventFormData, date: e.target.value })}
-            required
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="開始日"
+              type="date"
+              value={eventFormData.date}
+              onChange={(e) => setEventFormData({ ...eventFormData, date: e.target.value })}
+              required
+            />
+            <Input
+              label="終了日（複数日の場合）"
+              type="date"
+              value={eventFormData.end_date}
+              onChange={(e) => setEventFormData({ ...eventFormData, end_date: e.target.value })}
+            />
+          </div>
           <Input
             label="時刻"
             type="time"

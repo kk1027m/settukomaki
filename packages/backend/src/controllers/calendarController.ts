@@ -17,8 +17,17 @@ export const getEvents = async (req: AuthRequest, res: Response, next: any) => {
     const values: any[] = [];
 
     if (year && month) {
-      sql += ` AND EXTRACT(YEAR FROM e.date) = $1 AND EXTRACT(MONTH FROM e.date) = $2`;
-      values.push(year, month);
+      // 該当月に開始または終了する、または該当月をまたぐイベントを取得
+      const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`;
+      const endOfMonth = new Date(Number(year), Number(month), 0).getDate();
+      const endOfMonthDate = `${year}-${String(month).padStart(2, '0')}-${endOfMonth}`;
+
+      sql += ` AND (
+        (e.date >= $1 AND e.date <= $2) OR
+        (e.end_date >= $1 AND e.end_date <= $2) OR
+        (e.date <= $1 AND e.end_date >= $2)
+      )`;
+      values.push(startOfMonth, endOfMonthDate);
     }
 
     sql += ` ORDER BY e.date ASC, e.start_time ASC NULLS LAST, e.created_at ASC`;
@@ -61,18 +70,23 @@ export const getDayColors = async (req: AuthRequest, res: Response, next: any) =
 // イベント作成
 export const createEvent = async (req: AuthRequest, res: Response, next: any) => {
   try {
-    const { date, title, description, color, start_time } = req.body;
+    const { date, end_date, title, description, color, start_time } = req.body;
     const userId = req.user?.id;
 
     if (!date || !title) {
       throw new AppError('日付とタイトルは必須です', 400);
     }
 
+    // end_dateがdateより前の場合はエラー
+    if (end_date && new Date(end_date) < new Date(date)) {
+      throw new AppError('終了日は開始日より後に設定してください', 400);
+    }
+
     const result = await query(
-      `INSERT INTO calendar_events (date, title, description, color, start_time, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO calendar_events (date, end_date, title, description, color, start_time, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [date, title, description || null, color || 'blue', start_time || null, userId]
+      [date, end_date || null, title, description || null, color || 'blue', start_time || null, userId]
     );
 
     res.status(201).json({
@@ -88,7 +102,12 @@ export const createEvent = async (req: AuthRequest, res: Response, next: any) =>
 export const updateEvent = async (req: AuthRequest, res: Response, next: any) => {
   try {
     const { id } = req.params;
-    const { date, title, description, color, start_time } = req.body;
+    const { date, end_date, title, description, color, start_time } = req.body;
+
+    // end_dateがdateより前の場合はエラー
+    if (date && end_date && new Date(end_date) < new Date(date)) {
+      throw new AppError('終了日は開始日より後に設定してください', 400);
+    }
 
     const updates: string[] = [];
     const values: any[] = [];
@@ -97,6 +116,11 @@ export const updateEvent = async (req: AuthRequest, res: Response, next: any) =>
     if (date !== undefined) {
       updates.push(`date = $${paramCount++}`);
       values.push(date);
+    }
+
+    if (end_date !== undefined) {
+      updates.push(`end_date = $${paramCount++}`);
+      values.push(end_date || null);
     }
 
     if (title !== undefined) {
