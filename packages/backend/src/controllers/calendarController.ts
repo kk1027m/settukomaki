@@ -67,11 +67,12 @@ export const getDayColors = async (req: AuthRequest, res: Response, next: any) =
   }
 };
 
-// イベント作成
+// イベント作成（end_date対応）
 export const createEvent = async (req: AuthRequest, res: Response, next: any) => {
   try {
     const { date, end_date, title, description, color, start_time } = req.body;
     const userId = req.user?.id;
+    console.log('createEvent called with end_date:', end_date);
 
     if (!date || !title) {
       throw new AppError('日付とタイトルは必須です', 400);
@@ -98,11 +99,12 @@ export const createEvent = async (req: AuthRequest, res: Response, next: any) =>
   }
 };
 
-// イベント更新
+// イベント更新（end_date対応）
 export const updateEvent = async (req: AuthRequest, res: Response, next: any) => {
   try {
     const { id } = req.params;
     const { date, end_date, title, description, color, start_time } = req.body;
+    console.log('updateEvent called with end_date:', end_date);
 
     // end_dateがdateより前の場合はエラー
     if (date && end_date && new Date(end_date) < new Date(date)) {
