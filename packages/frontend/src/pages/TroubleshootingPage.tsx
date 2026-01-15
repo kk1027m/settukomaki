@@ -172,10 +172,13 @@ export default function TroubleshootingPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">トラブルシューティング</h1>
+      <div className="flex justify-between items-center mb-4 gap-2">
+        <h1 className="text-2xl font-bold">
+          <span className="md:hidden">トラブル<br />シューティング</span>
+          <span className="hidden md:inline">トラブルシューティング</span>
+        </h1>
         {canEdit && (
-          <Button onClick={handleAdd} className="flex items-center gap-2">
+          <Button onClick={handleAdd} className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <Plus size={20} />
             新規追加
           </Button>
