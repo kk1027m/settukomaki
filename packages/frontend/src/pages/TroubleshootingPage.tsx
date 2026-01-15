@@ -180,7 +180,7 @@ export default function TroubleshootingPage() {
         {canEdit && (
           <Button onClick={handleAdd} className="flex flex-col items-start gap-1 flex-shrink-0 px-4 py-2">
             <Plus size={20} />
-            <span className="text-xs">新規追加</span>
+            <span>新規追加</span>
           </Button>
         )}
       </div>

@@ -377,9 +377,10 @@ export default function ReplacementPage() {
               resetForm();
               setIsModalOpen(true);
             }}
+            className="flex flex-col items-start gap-1 px-4 py-2"
           >
-            <Plus size={20} className="mr-2" />
-            交換予定を追加
+            <Plus size={20} />
+            <span className="text-xs md:text-sm">交換予定を追加</span>
           </Button>
         )}
       </div>
