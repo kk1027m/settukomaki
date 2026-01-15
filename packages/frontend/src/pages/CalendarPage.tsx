@@ -764,12 +764,16 @@ export default function CalendarPage() {
               onChange={(e) => setEventFormData({ ...eventFormData, date: e.target.value })}
               required
             />
-            <Input
-              label="終了日（複数日の場合）"
-              type="date"
-              value={eventFormData.end_date}
-              onChange={(e) => setEventFormData({ ...eventFormData, end_date: e.target.value })}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">終了日（複数日の場合）</label>
+              <input
+                type="date"
+                className="input w-full"
+                value={eventFormData.end_date}
+                min={eventFormData.date}
+                onChange={(e) => setEventFormData({ ...eventFormData, end_date: e.target.value })}
+              />
+            </div>
           </div>
           <Input
             label="時刻"
