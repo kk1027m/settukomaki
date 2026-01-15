@@ -201,3 +201,138 @@ export const setDayColor = async (req: AuthRequest, res: Response, next: any) =>
     next(error);
   }
 };
+
+// 週シフト一覧取得
+export const getWeekShifts = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { year, month } = req.query;
+
+    let sql = `SELECT sunday_date, shift FROM calendar_week_shifts WHERE 1=1`;
+    const values: any[] = [];
+
+    if (year && month) {
+      sql += ` AND EXTRACT(YEAR FROM sunday_date) = $1 AND EXTRACT(MONTH FROM sunday_date) = $2`;
+      values.push(year, month);
+    }
+
+    sql += ` ORDER BY sunday_date ASC`;
+
+    const result = await query(sql, values);
+
+    res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 週シフト更新
+export const updateWeekShift = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { sundayDate, shift } = req.body;
+    const userId = req.user?.id;
+
+    if (!sundayDate || !shift) {
+      throw new AppError('日曜日の日付とシフトは必須です', 400);
+    }
+
+    if (shift !== 'A' && shift !== 'B') {
+      throw new AppError('シフトはAまたはBを指定してください', 400);
+    }
+
+    const result = await query(
+      `INSERT INTO calendar_week_shifts (sunday_date, shift, created_by)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (sunday_date) DO UPDATE SET
+         shift = $2,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [sundayDate, shift, userId]
+    );
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 有給休暇一覧取得
+export const getLeaves = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { year, month, date } = req.query;
+
+    let sql = `SELECT * FROM calendar_leaves WHERE 1=1`;
+    const values: any[] = [];
+    let paramCount = 1;
+
+    if (date) {
+      sql += ` AND date = $${paramCount++}`;
+      values.push(date);
+    } else if (year && month) {
+      sql += ` AND EXTRACT(YEAR FROM date) = $${paramCount++} AND EXTRACT(MONTH FROM date) = $${paramCount++}`;
+      values.push(year, month);
+    }
+
+    sql += ` ORDER BY date ASC, employee_name ASC`;
+
+    const result = await query(sql, values);
+
+    res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 有給休暇追加
+export const createLeave = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { date, employee_name, note } = req.body;
+    const userId = req.user?.id;
+
+    if (!date || !employee_name) {
+      throw new AppError('日付と名前は必須です', 400);
+    }
+
+    const result = await query(
+      `INSERT INTO calendar_leaves (date, employee_name, note, created_by)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [date, employee_name, note || null, userId]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 有給休暇削除
+export const deleteLeave = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const { id } = req.params;
+
+    const result = await query('DELETE FROM calendar_leaves WHERE id = $1 RETURNING *', [id]);
+
+    if (result.rows.length === 0) {
+      throw new AppError('有給休暇情報が見つかりません', 404);
+    }
+
+    res.json({
+      success: true,
+      message: '有給休暇情報を削除しました',
+    });
+  } catch (error) {
+    next(error);
+  }
+};

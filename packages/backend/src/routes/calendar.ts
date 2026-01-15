@@ -44,4 +44,34 @@ router.post(
   calendarController.setDayColor
 );
 
+// Week shift routes (A班/B班)
+router.get('/week-shifts', calendarController.getWeekShifts);
+
+router.post(
+  '/week-shifts',
+  requireLeaderOrAdmin,
+  [
+    body('sundayDate').notEmpty().withMessage('日曜日の日付は必須です'),
+    body('shift').isIn(['A', 'B']).withMessage('シフトはAまたはBを指定してください'),
+    validateRequest,
+  ],
+  calendarController.updateWeekShift
+);
+
+// Leaves routes (有給休暇)
+router.get('/leaves', calendarController.getLeaves);
+
+router.post(
+  '/leaves',
+  requireLeaderOrAdmin,
+  [
+    body('date').notEmpty().withMessage('日付は必須です'),
+    body('employee_name').notEmpty().withMessage('名前は必須です'),
+    validateRequest,
+  ],
+  calendarController.createLeave
+);
+
+router.delete('/leaves/:id', requireLeaderOrAdmin, calendarController.deleteLeave);
+
 export default router;

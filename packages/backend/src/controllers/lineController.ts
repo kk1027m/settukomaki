@@ -188,6 +188,24 @@ const checkAndSendNotifications = async () => {
      ORDER BY part_name ASC`
   );
 
+  // 当日のカレンダーイベント
+  const todayEventsResult = await query(
+    `SELECT title, description, start_time
+     FROM calendar_events
+     WHERE date = $1
+     ORDER BY start_time ASC NULLS LAST`,
+    [today.toISOString().split('T')[0]]
+  );
+
+  // 当日の有給休暇取得者
+  const todayLeavesResult = await query(
+    `SELECT employee_name
+     FROM calendar_leaves
+     WHERE date = $1
+     ORDER BY employee_name ASC`,
+    [today.toISOString().split('T')[0]]
+  );
+
   const message = formatNotificationMessage(
     overdueLubricationResult.rows,
     urgentLubricationResult.rows,
@@ -195,7 +213,9 @@ const checkAndSendNotifications = async () => {
     overdueReplacementResult.rows,
     urgentReplacementResult.rows,
     scheduledReplacementResult.rows,
-    lowStockResult.rows
+    lowStockResult.rows,
+    todayEventsResult.rows,
+    todayLeavesResult.rows
   );
 
   if (!message) {
@@ -216,6 +236,8 @@ const checkAndSendNotifications = async () => {
       urgentReplacement: urgentReplacementResult.rows.length,
       scheduledReplacement: scheduledReplacementResult.rows.length,
       lowStock: lowStockResult.rows.length,
+      todayEvents: todayEventsResult.rows.length,
+      todayLeaves: todayLeavesResult.rows.length,
     },
   };
 };

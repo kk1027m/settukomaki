@@ -57,5 +57,20 @@ router.post('/day-colors', auth_1.requireLeaderOrAdmin, [
     (0, express_validator_1.body)('date').notEmpty().withMessage('日付は必須です'),
     validateRequest_1.validateRequest,
 ], calendarController.setDayColor);
+// Week shift routes (A班/B班)
+router.get('/week-shifts', calendarController.getWeekShifts);
+router.post('/week-shifts', auth_1.requireLeaderOrAdmin, [
+    (0, express_validator_1.body)('sundayDate').notEmpty().withMessage('日曜日の日付は必須です'),
+    (0, express_validator_1.body)('shift').isIn(['A', 'B']).withMessage('シフトはAまたはBを指定してください'),
+    validateRequest_1.validateRequest,
+], calendarController.updateWeekShift);
+// Leaves routes (有給休暇)
+router.get('/leaves', calendarController.getLeaves);
+router.post('/leaves', auth_1.requireLeaderOrAdmin, [
+    (0, express_validator_1.body)('date').notEmpty().withMessage('日付は必須です'),
+    (0, express_validator_1.body)('employee_name').notEmpty().withMessage('名前は必須です'),
+    validateRequest_1.validateRequest,
+], calendarController.createLeave);
+router.delete('/leaves/:id', auth_1.requireLeaderOrAdmin, calendarController.deleteLeave);
 exports.default = router;
 //# sourceMappingURL=calendar.js.map

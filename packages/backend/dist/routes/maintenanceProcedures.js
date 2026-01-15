@@ -53,20 +53,20 @@ router.post('/:procedure_id/comments', [
 ], maintenanceProceduresController.createComment);
 router.delete('/comments/:id', maintenanceProceduresController.deleteComment);
 // POST, PUT, DELETE routes - admin only
-router.post('/', auth_1.requireAdmin, [
+router.post('/', auth_1.requireLeaderOrAdmin, [
     (0, express_validator_1.body)('title').notEmpty().withMessage('タイトルは必須です'),
     (0, express_validator_1.body)('content').notEmpty().withMessage('内容は必須です'),
     (0, express_validator_1.body)('category').isIn(['machine', 'common']).withMessage('有効なカテゴリを選択してください'),
     validateRequest_1.validateRequest,
 ], maintenanceProceduresController.createProcedure);
-router.put('/:id', auth_1.requireAdmin, [
+router.put('/:id', auth_1.requireLeaderOrAdmin, [
     (0, express_validator_1.body)('title').notEmpty().withMessage('タイトルは必須です'),
     (0, express_validator_1.body)('content').notEmpty().withMessage('内容は必須です'),
     (0, express_validator_1.body)('category').isIn(['machine', 'common']).withMessage('有効なカテゴリを選択してください'),
     validateRequest_1.validateRequest,
 ], maintenanceProceduresController.updateProcedure);
-router.delete('/:id', auth_1.requireAdmin, maintenanceProceduresController.deleteProcedure);
+router.delete('/:id', auth_1.requireLeaderOrAdmin, maintenanceProceduresController.deleteProcedure);
 // Sort order route - admin only
-router.put('/sort-order', auth_1.requireAdmin, maintenanceProceduresController.updateProcedureSortOrder);
+router.put('/sort-order', auth_1.requireLeaderOrAdmin, maintenanceProceduresController.updateProcedureSortOrder);
 exports.default = router;
 //# sourceMappingURL=maintenanceProcedures.js.map

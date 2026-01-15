@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setDayColor = exports.deleteEvent = exports.updateEvent = exports.createEvent = exports.getDayColors = exports.getEvents = void 0;
+exports.deleteLeave = exports.createLeave = exports.getLeaves = exports.updateWeekShift = exports.getWeekShifts = exports.setDayColor = exports.deleteEvent = exports.updateEvent = exports.createEvent = exports.getDayColors = exports.getEvents = void 0;
 const connection_1 = require("../database/connection");
 const errorHandler_1 = require("../middleware/errorHandler");
 // カレンダーイベント一覧取得
@@ -169,4 +169,119 @@ const setDayColor = async (req, res, next) => {
     }
 };
 exports.setDayColor = setDayColor;
+// 週シフト一覧取得
+const getWeekShifts = async (req, res, next) => {
+    try {
+        const { year, month } = req.query;
+        let sql = `SELECT sunday_date, shift FROM calendar_week_shifts WHERE 1=1`;
+        const values = [];
+        if (year && month) {
+            sql += ` AND EXTRACT(YEAR FROM sunday_date) = $1 AND EXTRACT(MONTH FROM sunday_date) = $2`;
+            values.push(year, month);
+        }
+        sql += ` ORDER BY sunday_date ASC`;
+        const result = await (0, connection_1.query)(sql, values);
+        res.json({
+            success: true,
+            data: result.rows,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getWeekShifts = getWeekShifts;
+// 週シフト更新
+const updateWeekShift = async (req, res, next) => {
+    try {
+        const { sundayDate, shift } = req.body;
+        const userId = req.user?.id;
+        if (!sundayDate || !shift) {
+            throw new errorHandler_1.AppError('日曜日の日付とシフトは必須です', 400);
+        }
+        if (shift !== 'A' && shift !== 'B') {
+            throw new errorHandler_1.AppError('シフトはAまたはBを指定してください', 400);
+        }
+        const result = await (0, connection_1.query)(`INSERT INTO calendar_week_shifts (sunday_date, shift, created_by)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (sunday_date) DO UPDATE SET
+         shift = $2,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`, [sundayDate, shift, userId]);
+        res.json({
+            success: true,
+            data: result.rows[0],
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.updateWeekShift = updateWeekShift;
+// 有給休暇一覧取得
+const getLeaves = async (req, res, next) => {
+    try {
+        const { year, month, date } = req.query;
+        let sql = `SELECT * FROM calendar_leaves WHERE 1=1`;
+        const values = [];
+        let paramCount = 1;
+        if (date) {
+            sql += ` AND date = $${paramCount++}`;
+            values.push(date);
+        }
+        else if (year && month) {
+            sql += ` AND EXTRACT(YEAR FROM date) = $${paramCount++} AND EXTRACT(MONTH FROM date) = $${paramCount++}`;
+            values.push(year, month);
+        }
+        sql += ` ORDER BY date ASC, employee_name ASC`;
+        const result = await (0, connection_1.query)(sql, values);
+        res.json({
+            success: true,
+            data: result.rows,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getLeaves = getLeaves;
+// 有給休暇追加
+const createLeave = async (req, res, next) => {
+    try {
+        const { date, employee_name, note } = req.body;
+        const userId = req.user?.id;
+        if (!date || !employee_name) {
+            throw new errorHandler_1.AppError('日付と名前は必須です', 400);
+        }
+        const result = await (0, connection_1.query)(`INSERT INTO calendar_leaves (date, employee_name, note, created_by)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`, [date, employee_name, note || null, userId]);
+        res.status(201).json({
+            success: true,
+            data: result.rows[0],
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.createLeave = createLeave;
+// 有給休暇削除
+const deleteLeave = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const result = await (0, connection_1.query)('DELETE FROM calendar_leaves WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length === 0) {
+            throw new errorHandler_1.AppError('有給休暇情報が見つかりません', 404);
+        }
+        res.json({
+            success: true,
+            message: '有給休暇情報を削除しました',
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.deleteLeave = deleteLeave;
 //# sourceMappingURL=calendarController.js.map

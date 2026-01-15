@@ -128,7 +128,9 @@ export const formatNotificationMessage = (
   overdueReplacement: any[],
   urgentReplacement: any[],
   scheduledReplacement: any[],
-  lowStockParts: any[]
+  lowStockParts: any[],
+  todayEvents?: any[],
+  todayLeaves?: any[]
 ): string | null => {
   const lines: string[] = [];
 
@@ -191,6 +193,23 @@ export const formatNotificationMessage = (
     lowStockParts.forEach((item) => {
       lines.push('  ・' + item.part_name);
       lines.push('    発注依頼: ' + item.quantity + ' / 現在庫: ' + item.minimum_quantity);
+    });
+    lines.push('');
+  }
+
+  if (todayEvents && todayEvents.length > 0) {
+    lines.push('\u{1F4C5} 【本日の予定】');
+    todayEvents.forEach((event) => {
+      const timeStr = event.start_time ? event.start_time.slice(0, 5) + ' ' : '';
+      lines.push('  ・' + timeStr + event.title);
+    });
+    lines.push('');
+  }
+
+  if (todayLeaves && todayLeaves.length > 0) {
+    lines.push('\u{1F3D6}\u{FE0F} 【本日の有給休暇】');
+    todayLeaves.forEach((leave) => {
+      lines.push('  ・' + leave.employee_name);
     });
     lines.push('');
   }

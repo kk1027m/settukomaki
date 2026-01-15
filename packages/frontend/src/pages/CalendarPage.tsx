@@ -24,6 +24,13 @@ interface DayColor {
   color: string;
 }
 
+interface Leave {
+  id: number;
+  date: string;
+  employee_name: string;
+  note: string | null;
+}
+
 const EVENT_COLORS = [
   { value: 'blue', label: '青', bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-300', dot: 'bg-blue-500' },
   { value: 'green', label: '緑', bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-300', dot: 'bg-green-500' },
@@ -76,11 +83,12 @@ export default function CalendarPage() {
   const [bulkStartDate, setBulkStartDate] = useState('');
   const [bulkEndDate, setBulkEndDate] = useState('');
 
+  // 有給休暇
+  const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [newLeaveName, setNewLeaveName] = useState('');
+
   // A/B班設定（週ごと、キーは週の日曜日の日付）
-  const [weekShifts, setWeekShifts] = useState<Record<string, 'A' | 'B'>>(() => {
-    const saved = localStorage.getItem('calendarWeekShifts');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [weekShifts, setWeekShifts] = useState<Record<string, 'A' | 'B'>>({});
 
   // 長押し検出用
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
@@ -96,13 +104,24 @@ export default function CalendarPage() {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
 
-      const [eventsRes, colorsRes] = await Promise.all([
+      const [eventsRes, colorsRes, shiftsRes, leavesRes] = await Promise.all([
         api.get(`/calendar/events?year=${year}&month=${month}`),
         api.get(`/calendar/day-colors?year=${year}&month=${month}`),
+        api.get(`/calendar/week-shifts?year=${year}&month=${month}`),
+        api.get(`/calendar/leaves?year=${year}&month=${month}`),
       ]);
 
       setEvents(eventsRes.data.data);
       setDayColors(colorsRes.data.data);
+      setLeaves(leavesRes.data.data);
+
+      // DBから取得したシフトをlocal stateに設定
+      const shiftsMap: Record<string, 'A' | 'B'> = {};
+      shiftsRes.data.data.forEach((item: any) => {
+        const dateStr = item.sunday_date.split('T')[0];
+        shiftsMap[dateStr] = item.shift;
+      });
+      setWeekShifts(shiftsMap);
     } catch (error) {
       toast.error('データの読み込みに失敗しました');
     } finally {
@@ -179,6 +198,41 @@ export default function CalendarPage() {
     return dayColor?.color || '';
   };
 
+  const getLeavesForDate = (dateStr: string) => {
+    return leaves.filter((leave) => leave.date.split('T')[0] === dateStr);
+  };
+
+  const handleAddLeave = async () => {
+    if (!newLeaveName.trim()) {
+      toast.error('名前を入力してください');
+      return;
+    }
+
+    try {
+      await api.post('/calendar/leaves', {
+        date: selectedDate,
+        employee_name: newLeaveName.trim(),
+      });
+      toast.success('有給休暇を追加しました');
+      setNewLeaveName('');
+      loadData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || '追加に失敗しました');
+    }
+  };
+
+  const handleDeleteLeave = async (leaveId: number) => {
+    if (!confirm('この有給休暇情報を削除しますか？')) return;
+
+    try {
+      await api.delete(`/calendar/leaves/${leaveId}`);
+      toast.success('有給休暇を削除しました');
+      loadData();
+    } catch (error) {
+      toast.error('削除に失敗しました');
+    }
+  };
+
   const getColorClasses = (color: string) => {
     return EVENT_COLORS.find((c) => c.value === color) || EVENT_COLORS[0];
   };
@@ -188,13 +242,23 @@ export default function CalendarPage() {
   };
 
   // A/B班を切り替え
-  const toggleWeekShift = (sundayDate: string, e: React.MouseEvent) => {
+  const toggleWeekShift = async (sundayDate: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!canEdit) return;
+
     const current = weekShifts[sundayDate] || 'A';
     const next: 'A' | 'B' = current === 'A' ? 'B' : 'A';
-    const newShifts: Record<string, 'A' | 'B'> = { ...weekShifts, [sundayDate]: next };
-    setWeekShifts(newShifts);
-    localStorage.setItem('calendarWeekShifts', JSON.stringify(newShifts));
+
+    try {
+      await api.post('/calendar/week-shifts', {
+        sundayDate,
+        shift: next,
+      });
+      const newShifts: Record<string, 'A' | 'B'> = { ...weekShifts, [sundayDate]: next };
+      setWeekShifts(newShifts);
+    } catch (error) {
+      toast.error('班の更新に失敗しました');
+    }
   };
 
   // 週のシフトを取得
@@ -529,12 +593,14 @@ export default function CalendarPage() {
       >
         {(() => {
           const dayEvents = getEventsForDate(selectedDate);
+          const dayLeaves = getLeavesForDate(selectedDate);
           return (
             <div className="space-y-4">
+              {/* 予定セクション */}
               {dayEvents.length === 0 ? (
                 <p className="text-gray-500 text-center py-4">予定はありません</p>
               ) : (
-                <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                <div className="space-y-2 max-h-[40vh] overflow-y-auto">
                   {dayEvents.map((event) => {
                     const colorClasses = getColorClasses(event.color);
                     return (
@@ -584,6 +650,44 @@ export default function CalendarPage() {
                   </Button>
                 </div>
               )}
+
+              {/* 有給休暇セクション */}
+              <div className="pt-4 border-t">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">有給休暇取得者</h3>
+                {dayLeaves.length > 0 && (
+                  <div className="space-y-1 mb-3">
+                    {dayLeaves.map((leave) => (
+                      <div key={leave.id} className="flex items-center justify-between p-2 bg-emerald-50 rounded border border-emerald-200">
+                        <span className="text-emerald-800">{leave.employee_name}</span>
+                        {canEdit && (
+                          <button
+                            className="p-1 hover:bg-emerald-100 rounded"
+                            onClick={() => handleDeleteLeave(leave.id)}
+                          >
+                            <X size={14} className="text-red-500" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {canEdit && (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="名前を入力"
+                      value={newLeaveName}
+                      onChange={(e) => setNewLeaveName(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button onClick={handleAddLeave} variant="secondary">
+                      追加
+                    </Button>
+                  </div>
+                )}
+                {!canEdit && dayLeaves.length === 0 && (
+                  <p className="text-gray-400 text-sm">有給休暇取得者はいません</p>
+                )}
+              </div>
             </div>
           );
         })()}

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import * as maintenanceProceduresController from '../controllers/maintenanceProceduresController';
-import { authenticate, requireAdmin } from '../middleware/auth';
+import { authenticate, requireLeaderOrAdmin } from '../middleware/auth';
 import { validateRequest } from '../middleware/validateRequest';
 
 const router = Router();
@@ -33,7 +33,7 @@ router.delete(
 // POST, PUT, DELETE routes - admin only
 router.post(
   '/',
-  requireAdmin,
+  requireLeaderOrAdmin,
   [
     body('title').notEmpty().withMessage('タイトルは必須です'),
     body('content').notEmpty().withMessage('内容は必須です'),
@@ -45,7 +45,7 @@ router.post(
 
 router.put(
   '/:id',
-  requireAdmin,
+  requireLeaderOrAdmin,
   [
     body('title').notEmpty().withMessage('タイトルは必須です'),
     body('content').notEmpty().withMessage('内容は必須です'),
@@ -55,9 +55,9 @@ router.put(
   maintenanceProceduresController.updateProcedure
 );
 
-router.delete('/:id', requireAdmin, maintenanceProceduresController.deleteProcedure);
+router.delete('/:id', requireLeaderOrAdmin, maintenanceProceduresController.deleteProcedure);
 
 // Sort order route - admin only
-router.put('/sort-order', requireAdmin, maintenanceProceduresController.updateProcedureSortOrder);
+router.put('/sort-order', requireLeaderOrAdmin, maintenanceProceduresController.updateProcedureSortOrder);
 
 export default router;
