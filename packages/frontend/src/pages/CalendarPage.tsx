@@ -107,7 +107,7 @@ export default function CalendarPage() {
       const [eventsRes, colorsRes, shiftsRes, leavesRes] = await Promise.all([
         api.get(`/calendar/events?year=${year}&month=${month}`),
         api.get(`/calendar/day-colors?year=${year}&month=${month}`),
-        api.get(`/calendar/week-shifts?year=${year}&month=${month}`),
+        api.get('/calendar/week-shifts'),  // 全て取得（前月・翌月の週も表示されるため）
         api.get(`/calendar/leaves?year=${year}&month=${month}`),
       ]);
 
