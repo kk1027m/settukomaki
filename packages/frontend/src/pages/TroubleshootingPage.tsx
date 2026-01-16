@@ -33,6 +33,7 @@ export default function TroubleshootingPage() {
   const [editingItem, setEditingItem] = useState<TroubleshootingItem | null>(null);
   const [selectedItem, setSelectedItem] = useState<TroubleshootingItem | null>(null);
   const [files, setFiles] = useState<Attachment[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [viewFiles, setViewFiles] = useState<Attachment[]>([]);
   const [detailFileUrls, setDetailFileUrls] = useState<Record<number, string>>({});
   const [formData, setFormData] = useState({
@@ -199,10 +200,34 @@ export default function TroubleshootingPage() {
         await api.put(`/troubleshooting/items/${editingItem.id}`, formData);
         toast.success('更新しました');
       } else {
-        await api.post('/troubleshooting/items', formData);
-        toast.success('追加しました');
+        const response = await api.post('/troubleshooting/items', formData);
+        const newItemId = response.data.data.id;
+
+        // Upload pending files if any
+        if (pendingFiles.length > 0) {
+          for (const file of pendingFiles) {
+            const fileFormData = new FormData();
+            fileFormData.append('file', file);
+            await api.post(`/uploads/troubleshooting_item/${newItemId}`, fileFormData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+          }
+          toast.success('トラブルシューティングとファイルを追加しました');
+        } else {
+          toast.success('追加しました');
+        }
       }
       setIsModalOpen(false);
+      setFormData({
+        machine_name: '',
+        unit_name: '',
+        trouble_title: '',
+        trouble_description: '',
+        solution: '',
+      });
+      setEditingItem(null);
+      setFiles([]);
+      setPendingFiles([]);
       loadData();
     } catch (error: any) {
       toast.error(error.response?.data?.error || '保存に失敗しました');
@@ -445,6 +470,7 @@ export default function TroubleshootingPage() {
             files={files}
             onFilesChange={setFiles}
             allowCreate={!editingItem}
+            onPendingFilesChange={setPendingFiles}
           />
           <div className="flex gap-2 justify-end">
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>

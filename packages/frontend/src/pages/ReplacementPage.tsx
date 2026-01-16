@@ -40,6 +40,7 @@ export default function ReplacementPage() {
   const [expandedMachines, setExpandedMachines] = useState<Set<string>>(new Set());
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
   const [images, setImages] = useState<Attachment[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [viewImages, setViewImages] = useState<Attachment[]>([]);
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<number, string>>({});
   const [detailImageUrls, setDetailImageUrls] = useState<Record<number, string>>({});
@@ -172,14 +173,26 @@ export default function ReplacementPage() {
       if (editingSchedule) {
         await api.put(`/replacements/schedules/${editingSchedule.id}`, formData);
         toast.success('交換予定を更新しました');
-        setIsModalOpen(false);
-        resetForm();
       } else {
         const response = await api.post('/replacements/schedules', formData);
-        const newSchedule = response.data.data;
-        setEditingSchedule(newSchedule);
-        toast.success('交換予定を追加しました。画像を追加できます。');
+        const newScheduleId = response.data.data.id;
+
+        // Upload pending files if any
+        if (pendingFiles.length > 0) {
+          for (const file of pendingFiles) {
+            const fileFormData = new FormData();
+            fileFormData.append('file', file);
+            await api.post(`/uploads/replacement_schedule/${newScheduleId}`, fileFormData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+          }
+          toast.success('交換予定とファイルを追加しました');
+        } else {
+          toast.success('交換予定を追加しました');
+        }
       }
+      setIsModalOpen(false);
+      resetForm();
       loadSchedules();
     } catch (error: any) {
       toast.error(error.response?.data?.error || '保存に失敗しました');
@@ -227,6 +240,7 @@ export default function ReplacementPage() {
       setImages(response.data.data || []);
     } catch (error) {
       setImages([]);
+    setPendingFiles([]);
     }
 
     setIsModalOpen(true);
@@ -295,6 +309,7 @@ export default function ReplacementPage() {
   const resetForm = () => {
     setEditingSchedule(null);
     setImages([]);
+    setPendingFiles([]);
     setFormData({
       machine_name: '',
       unit_name: '',
@@ -609,6 +624,7 @@ export default function ReplacementPage() {
             files={images}
             onFilesChange={setImages}
             allowCreate={!editingSchedule}
+            onPendingFilesChange={setPendingFiles}
           />
           <div className="flex gap-2 justify-end">
             <Button

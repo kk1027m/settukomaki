@@ -39,6 +39,7 @@ export default function LubricationPage() {
   const [expandedMachines, setExpandedMachines] = useState<Set<string>>(new Set());
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
   const [images, setImages] = useState<Attachment[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [viewImages, setViewImages] = useState<Attachment[]>([]);
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<number, string>>({});
   const [detailImageUrls, setDetailImageUrls] = useState<Record<number, string>>({});
@@ -170,14 +171,26 @@ export default function LubricationPage() {
       if (editingPoint) {
         await api.put(`/lubrication/points/${editingPoint.id}`, formData);
         toast.success('給油箇所を更新しました');
-        setIsModalOpen(false);
-        resetForm();
       } else {
         const response = await api.post('/lubrication/points', formData);
-        const newPoint = response.data.data;
-        setEditingPoint(newPoint);
-        toast.success('給油箇所を追加しました。画像を追加できます。');
+        const newPointId = response.data.data.id;
+
+        // Upload pending files if any
+        if (pendingFiles.length > 0) {
+          for (const file of pendingFiles) {
+            const fileFormData = new FormData();
+            fileFormData.append('file', file);
+            await api.post(`/uploads/lubrication_point/${newPointId}`, fileFormData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+          }
+          toast.success('給油箇所とファイルを追加しました');
+        } else {
+          toast.success('給油箇所を追加しました');
+        }
       }
+      setIsModalOpen(false);
+      resetForm();
       loadPoints();
     } catch (error: any) {
       toast.error(error.response?.data?.error || '保存に失敗しました');
@@ -595,6 +608,7 @@ export default function LubricationPage() {
             files={images}
             onFilesChange={setImages}
             allowCreate={!editingPoint}
+            onPendingFilesChange={setPendingFiles}
           />
           <div className="flex gap-2 justify-end">
             <Button
