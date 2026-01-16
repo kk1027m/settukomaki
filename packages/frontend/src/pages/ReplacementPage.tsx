@@ -4,7 +4,7 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
 import { Input } from '../components/common/Input';
-import { ImageUpload, Attachment } from '../components/common/ImageUpload';
+import { FileUpload, Attachment } from '../components/common/FileUpload';
 import { api, API_URL } from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -603,11 +603,11 @@ export default function ReplacementPage() {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
-          <ImageUpload
+          <FileUpload
             entityType="replacement_schedule"
             entityId={editingSchedule?.id || null}
-            images={images}
-            onImagesChange={setImages}
+            files={images}
+            onFilesChange={setImages}
           />
           <div className="flex gap-2 justify-end">
             <Button

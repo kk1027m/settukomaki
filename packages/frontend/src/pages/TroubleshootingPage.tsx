@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, Search, Edit2, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Search, Edit2, Trash2, FileText, Image as ImageIcon } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
 import { Modal } from '../components/common/Modal';
-import { api } from '../services/api';
+import { FileUpload, Attachment } from '../components/common/FileUpload';
+import { api, API_URL } from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
 
 interface TroubleshootingItem {
   id: number;
@@ -30,6 +32,9 @@ export default function TroubleshootingPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<TroubleshootingItem | null>(null);
   const [selectedItem, setSelectedItem] = useState<TroubleshootingItem | null>(null);
+  const [files, setFiles] = useState<Attachment[]>([]);
+  const [viewFiles, setViewFiles] = useState<Attachment[]>([]);
+  const [detailFileUrls, setDetailFileUrls] = useState<Record<number, string>>({});
   const [formData, setFormData] = useState({
     machine_name: '',
     unit_name: '',
@@ -56,6 +61,46 @@ export default function TroubleshootingPage() {
       setLoading(false);
     }
   };
+
+  // Load detail file URLs when detail modal is open
+  useEffect(() => {
+    const loadDetailFileUrls = async () => {
+      if (!isDetailModalOpen || viewFiles.length === 0) return;
+      const newFileUrls: Record<number, string> = {};
+      for (const file of viewFiles) {
+        if (file.mime_type?.startsWith('image/') && !detailFileUrls[file.id]) {
+          try {
+            if (file.url.startsWith('http')) {
+              newFileUrls[file.id] = file.url;
+            } else {
+              const response = await axios.get(`${API_URL}${file.url}`, {
+                responseType: 'blob',
+                timeout: 10000,
+              });
+              const objectUrl = URL.createObjectURL(response.data);
+              newFileUrls[file.id] = objectUrl;
+            }
+          } catch (error) {
+            console.error('Failed to load file:', file.id, error);
+          }
+        }
+      }
+      if (Object.keys(newFileUrls).length > 0) {
+        setDetailFileUrls(prev => ({ ...prev, ...newFileUrls }));
+      }
+    };
+    loadDetailFileUrls();
+    return () => {
+      if (!isDetailModalOpen) {
+        Object.values(detailFileUrls).forEach(url => {
+          if (url.startsWith('blob:')) {
+            URL.revokeObjectURL(url);
+          }
+        });
+        setDetailFileUrls({});
+      }
+    };
+  }, [isDetailModalOpen, viewFiles]);
 
   // ユニット一覧を取得
   const units = ['all', ...Array.from(new Set(items.map(p => p.unit_name).filter(Boolean))) as string[]];
@@ -104,6 +149,7 @@ export default function TroubleshootingPage() {
   };
 
   const handleAdd = () => {
+    setFiles([]);
     setEditingItem(null);
     setFormData({
       machine_name: '',
@@ -115,7 +161,7 @@ export default function TroubleshootingPage() {
     setIsModalOpen(true);
   };
 
-  const handleEdit = (item: TroubleshootingItem) => {
+  const handleEdit = async (item: TroubleshootingItem) => {
     setEditingItem(item);
     setFormData({
       machine_name: item.machine_name,
@@ -124,6 +170,12 @@ export default function TroubleshootingPage() {
       trouble_description: item.trouble_description || '',
       solution: item.solution || '',
     });
+    try {
+      const response = await api.get(`/uploads/entity/troubleshooting_item/${item.id}`);
+      setFiles(response.data.data || []);
+    } catch (error) {
+      setFiles([]);
+    }
     setIsModalOpen(true);
   };
 
@@ -157,8 +209,14 @@ export default function TroubleshootingPage() {
     }
   };
 
-  const handleViewDetail = (item: TroubleshootingItem) => {
+  const handleViewDetail = async (item: TroubleshootingItem) => {
     setSelectedItem(item);
+    try {
+      const response = await api.get(`/uploads/entity/troubleshooting_item/${item.id}`);
+      setViewFiles(response.data.data || []);
+    } catch (error) {
+      setViewFiles([]);
+    }
     setIsDetailModalOpen(true);
   };
 
@@ -381,6 +439,12 @@ export default function TroubleshootingPage() {
               rows={4}
             />
           </div>
+          <FileUpload
+            entityType="troubleshooting_item"
+            entityId={editingItem?.id || null}
+            files={files}
+            onFilesChange={setFiles}
+          />
           <div className="flex gap-2 justify-end">
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
               キャンセル
@@ -423,6 +487,49 @@ export default function TroubleshootingPage() {
                 <label className="text-sm font-medium text-gray-500">解決策</label>
                 <div className="bg-green-50 p-3 rounded-lg border border-green-200">
                   <p className="text-green-800 whitespace-pre-wrap">{selectedItem.solution}</p>
+                </div>
+              </div>
+            )}
+            {viewFiles.length > 0 && (
+              <div>
+                <label className="text-sm font-medium text-gray-500 block mb-2">添付ファイル</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {viewFiles.map((file) => (
+                    <div key={file.id} className="relative group">
+                      <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                        {file.mime_type?.startsWith('image/') ? (
+                          detailFileUrls[file.id] ? (
+                            <img
+                              src={detailFileUrls[file.id]}
+                              alt={file.file_name}
+                              className="w-full h-full object-cover cursor-pointer"
+                              onClick={() => window.open(detailFileUrls[file.id], '_blank')}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                            </div>
+                          )
+                        ) : (
+                          <a
+                            href={file.url.startsWith('http') ? file.url : `${API_URL}${file.url}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full h-full flex items-center justify-center hover:bg-gray-200 transition-colors"
+                          >
+                            {file.mime_type === 'application/pdf' ? (
+                              <FileText size={32} className="text-red-500" />
+                            ) : (
+                              <ImageIcon size={32} className="text-gray-400" />
+                            )}
+                          </a>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1 truncate" title={file.file_name}>
+                        {file.file_name}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

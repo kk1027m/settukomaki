@@ -7,7 +7,7 @@ import axios from 'axios';
 import { compressImage, isImageFile, getFileSizeMB } from '../../utils/imageCompression';
 
 interface FileUploadProps {
-  entityType: 'lubrication_point' | 'replacement_schedule' | 'part' | 'maintenance_procedure' | 'topic';
+  entityType: 'lubrication_point' | 'replacement_schedule' | 'part' | 'maintenance_procedure' | 'topic' | 'troubleshooting_item';
   entityId: number | null;
   files: Attachment[];
   onFilesChange: (files: Attachment[]) => void;
