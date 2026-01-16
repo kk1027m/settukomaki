@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, Search, Edit2, Trash2, FileText, Image as ImageIcon } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Search, Edit2, Trash2, FileText } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
@@ -497,9 +497,9 @@ export default function TroubleshootingPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {viewFiles.map((file) => (
                     <div key={file.id} className="relative group">
-                      <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
-                        {file.mime_type?.startsWith('image/') ? (
-                          detailFileUrls[file.id] ? (
+                      {file.mime_type?.startsWith('image/') ? (
+                        <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                          {detailFileUrls[file.id] ? (
                             <img
                               src={detailFileUrls[file.id]}
                               alt={file.file_name}
@@ -510,22 +510,25 @@ export default function TroubleshootingPage() {
                             <div className="w-full h-full flex items-center justify-center">
                               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                             </div>
-                          )
-                        ) : (
-                          <a
-                            href={file.url.startsWith('http') ? file.url : `${API_URL}${file.url}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full h-full flex items-center justify-center hover:bg-gray-200 transition-colors"
-                          >
-                            {file.mime_type === 'application/pdf' ? (
-                              <FileText size={32} className="text-red-500" />
-                            ) : (
-                              <ImageIcon size={32} className="text-gray-400" />
-                            )}
-                          </a>
-                        )}
-                      </div>
+                          )}
+                        </div>
+                      ) : file.mime_type === 'application/pdf' ? (
+                        <a
+                          href={file.url.startsWith('http') ? file.url : `${API_URL}${file.url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                        >
+                          <div className="text-center">
+                            <FileText size={48} className="text-red-500 mx-auto mb-2" />
+                            <span className="text-xs text-gray-600">PDFを開く</span>
+                          </div>
+                        </a>
+                      ) : (
+                        <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
+                          <FileText size={32} className="text-gray-400" />
+                        </div>
+                      )}
                       <p className="text-xs text-gray-600 mt-1 truncate" title={file.file_name}>
                         {file.file_name}
                       </p>
