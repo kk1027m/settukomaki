@@ -444,6 +444,7 @@ export default function TroubleshootingPage() {
             entityId={editingItem?.id || null}
             files={files}
             onFilesChange={setFiles}
+            allowCreate={!editingItem}
           />
           <div className="flex gap-2 justify-end">
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>

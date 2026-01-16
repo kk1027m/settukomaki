@@ -608,6 +608,7 @@ export default function ReplacementPage() {
             entityId={editingSchedule?.id || null}
             files={images}
             onFilesChange={setImages}
+            allowCreate={!editingSchedule}
           />
           <div className="flex gap-2 justify-end">
             <Button

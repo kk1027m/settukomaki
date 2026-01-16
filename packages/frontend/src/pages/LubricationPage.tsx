@@ -594,6 +594,7 @@ export default function LubricationPage() {
             entityId={editingPoint?.id || null}
             files={images}
             onFilesChange={setImages}
+            allowCreate={!editingPoint}
           />
           <div className="flex gap-2 justify-end">
             <Button
