@@ -214,6 +214,15 @@ const checkAndSendNotifications = async () => {
     [todayStr]
   );
 
+  // 未対応の問い合わせ
+  const pendingInquiriesResult = await query(
+    `SELECT i.id, i.subject, i.created_at, u.username
+     FROM inquiries i
+     JOIN users u ON i.created_by_id = u.id
+     WHERE i.status = 'pending'
+     ORDER BY i.created_at DESC`
+  );
+
   const message = formatNotificationMessage(
     overdueLubricationResult.rows,
     urgentLubricationResult.rows,
@@ -223,7 +232,8 @@ const checkAndSendNotifications = async () => {
     scheduledReplacementResult.rows,
     lowStockResult.rows,
     todayEventsResult.rows,
-    todayLeavesResult.rows
+    todayLeavesResult.rows,
+    pendingInquiriesResult.rows
   );
 
   if (!message) {
@@ -246,6 +256,7 @@ const checkAndSendNotifications = async () => {
       lowStock: lowStockResult.rows.length,
       todayEvents: todayEventsResult.rows.length,
       todayLeaves: todayLeavesResult.rows.length,
+      pendingInquiries: pendingInquiriesResult.rows.length,
     },
   };
 };

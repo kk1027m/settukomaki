@@ -130,7 +130,8 @@ export const formatNotificationMessage = (
   scheduledReplacement: any[],
   lowStockParts: any[],
   todayEvents?: any[],
-  todayLeaves?: any[]
+  todayLeaves?: any[],
+  pendingInquiries?: any[]
 ): string | null => {
   const lines: string[] = [];
 
