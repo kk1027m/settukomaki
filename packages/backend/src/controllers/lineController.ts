@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { query } from '../database/connection';
+import { getJSTNow, getJSTDateString } from '../utils/dateUtils';
 import {
   saveLineGroupId,
   sendLineMessage,
@@ -95,7 +96,9 @@ export const triggerNotification = async (req: Request, res: Response) => {
 
 // Check all conditions and send LINE notification
 const checkAndSendNotifications = async () => {
-  const today = new Date();
+  // 日本時間の今日の日付を取得（UTCではなくJSTで）
+  const japanNow = getJSTNow();
+  const today = new Date(japanNow);
   today.setHours(0, 0, 0, 0);
 
   const threeDaysFromNow = new Date(today);
@@ -103,6 +106,11 @@ const checkAndSendNotifications = async () => {
 
   const sevenDaysFromNow = new Date(today);
   sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+
+  // 日付文字列をJSTベースで取得（toISOString()はUTCなので使わない）
+  const todayStr = getJSTDateString(today);
+  const threeDaysStr = getJSTDateString(threeDaysFromNow);
+  const sevenDaysStr = getJSTDateString(sevenDaysFromNow);
 
   // Overdue lubrication (past due date)
   const overdueLubricationResult = await query(
@@ -113,7 +121,7 @@ const checkAndSendNotifications = async () => {
      WHERE lp.is_active = true
        AND lr.next_due_date < $1
      ORDER BY lp.id, lr.performed_at DESC`,
-    [today.toISOString().split('T')[0]]
+    [todayStr]
   );
 
   // Urgent lubrication (within 3 days)
@@ -126,7 +134,7 @@ const checkAndSendNotifications = async () => {
        AND lr.next_due_date <= $1
        AND lr.next_due_date >= $2
      ORDER BY lp.id, lr.performed_at DESC`,
-    [threeDaysFromNow.toISOString().split('T')[0], today.toISOString().split('T')[0]]
+    [threeDaysStr, todayStr]
   );
 
   // Scheduled lubrication (4-7 days)
@@ -139,7 +147,7 @@ const checkAndSendNotifications = async () => {
        AND lr.next_due_date > $1
        AND lr.next_due_date <= $2
      ORDER BY lp.id, lr.performed_at DESC`,
-    [threeDaysFromNow.toISOString().split('T')[0], sevenDaysFromNow.toISOString().split('T')[0]]
+    [threeDaysStr, sevenDaysStr]
   );
 
   // Overdue replacement (past due date)
@@ -151,7 +159,7 @@ const checkAndSendNotifications = async () => {
      WHERE rs.is_active = true
        AND rr.next_due_date < $1
      ORDER BY rs.id, rr.replaced_at DESC`,
-    [today.toISOString().split('T')[0]]
+    [todayStr]
   );
 
   // Urgent replacement (within 3 days)
@@ -164,7 +172,7 @@ const checkAndSendNotifications = async () => {
        AND rr.next_due_date <= $1
        AND rr.next_due_date >= $2
      ORDER BY rs.id, rr.replaced_at DESC`,
-    [threeDaysFromNow.toISOString().split('T')[0], today.toISOString().split('T')[0]]
+    [threeDaysStr, todayStr]
   );
 
   // Scheduled replacement (4-7 days)
@@ -177,7 +185,7 @@ const checkAndSendNotifications = async () => {
        AND rr.next_due_date > $1
        AND rr.next_due_date <= $2
      ORDER BY rs.id, rr.replaced_at DESC`,
-    [threeDaysFromNow.toISOString().split('T')[0], sevenDaysFromNow.toISOString().split('T')[0]]
+    [threeDaysStr, sevenDaysStr]
   );
 
   // 発注依頼がある部品
@@ -194,7 +202,7 @@ const checkAndSendNotifications = async () => {
      FROM calendar_events
      WHERE date = $1
      ORDER BY start_time ASC NULLS LAST`,
-    [today.toISOString().split('T')[0]]
+    [todayStr]
   );
 
   // 当日の有給休暇取得者
@@ -203,7 +211,7 @@ const checkAndSendNotifications = async () => {
      FROM calendar_leaves
      WHERE date = $1
      ORDER BY employee_name ASC`,
-    [today.toISOString().split('T')[0]]
+    [todayStr]
   );
 
   const message = formatNotificationMessage(
